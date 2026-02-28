@@ -224,7 +224,7 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
         return b.row - a.row; // If same time, higher row index is newer
       });
       
-      setRecentActivities(sortedActivities.slice(0, 5));
+      setRecentActivities(sortedActivities.slice(0, 6));
 
     } catch (err) {
       console.error("Dashboard error:", err);
