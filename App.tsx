@@ -41,7 +41,18 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  Legend
+  Legend,
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Area,
+  AreaChart,
+  PieChart,
+  Pie,
+  Cell,
+  Sector
 } from 'recharts';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -104,7 +115,7 @@ const CustomRadio: React.FC<{ label: string, description?: string, name: string,
 
 // --- Dashboard Component ---
 
-const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string, row: number) => void }> = ({ isDarkMode, onActivityClick }) => {
+const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string, row: number) => void, onStatClick: (status: 'all' | 'processed' | 'pending') => void }> = ({ isDarkMode, onActivityClick, onStatClick }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, pending: 0, completed: 0 });
   const [chartData, setChartData] = useState<any[]>([]);
@@ -150,10 +161,13 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
             rows.forEach((r: any, idx: number) => {
               const physicalRow = idx + 2; // Physical row number in Google Sheets
               
-              // Aggregate contributors (case-insensitive)
-              const rawName = String(r.c[2]?.v || '').trim();
-              if (rawName) {
-                const normalizedName = rawName.toUpperCase();
+              // Aggregate contributors (case-insensitive) - Using robust cell value extraction
+              const reporterCell = r.c[2];
+              const rawName = reporterCell ? (reporterCell.f || (reporterCell.v != null ? String(reporterCell.v) : '')) : '';
+              const trimmedName = rawName.trim();
+              
+              if (trimmedName) {
+                const normalizedName = trimmedName.toUpperCase();
                 if (!contributorMap[normalizedName]) {
                   contributorMap[normalizedName] = { total: 0, monthly: {} };
                 }
@@ -182,9 +196,9 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
             pendingCount += pending;
 
             return {
-              name: cat === 'Quản lý hành chính' ? 'QLHC' : 
-                    cat === 'Thiết bị công trình' ? 'TBCT' : 
-                    cat === 'An toàn vệ sinh lao động' ? 'ATVSLĐ' : 'TPM',
+              name: cat === 'Quản lý hành chính' ? 'Quản lý hành chính' : 
+                    cat === 'Thiết bị công trình' ? 'Thiết bị công trình' : 
+                    cat === 'An toàn vệ sinh lao động' ? 'An toàn vệ sinh lao động' : 'TPM, Kaizen',
               detected, 
               processed, 
               nvvh      
@@ -224,7 +238,7 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
         return b.row - a.row; // If same time, higher row index is newer
       });
       
-      setRecentActivities(sortedActivities.slice(0, 6));
+      setRecentActivities(sortedActivities.slice(0, 5));
 
     } catch (err) {
       console.error("Dashboard error:", err);
@@ -254,51 +268,175 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
 
       <main className="px-4 -mt-12 relative z-10 flex-1 max-w-5xl mx-auto w-full">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-xl border border-white/50 dark:border-slate-800 text-center group transition-all hover:bg-blue-50/10">
+          <div 
+            onClick={() => onStatClick('all')}
+            className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-xl border border-white/50 dark:border-slate-800 text-center group transition-all hover:bg-blue-50/10 cursor-pointer active:scale-95"
+          >
             <p className="text-[10px] text-slate-400 font-black uppercase mb-1 tracking-widest">Tổng tồn tại</p>
             <p className="text-3xl font-black text-blue-600 dark:text-blue-400">{isLoading ? <Loader2 className="animate-spin inline" size={20} /> : stats.total}</p>
           </div>
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-xl border border-white/50 dark:border-slate-800 text-center group transition-all hover:bg-amber-50/10">
+          <div 
+            onClick={() => onStatClick('pending')}
+            className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-xl border border-white/50 dark:border-slate-800 text-center group transition-all hover:bg-amber-50/10 cursor-pointer active:scale-95"
+          >
             <p className="text-[10px] text-slate-400 font-black uppercase mb-1 tracking-widest">Đang xử lý</p>
             <p className="text-3xl font-black text-amber-500">{isLoading ? <Loader2 className="animate-spin inline" size={20} /> : stats.pending}</p>
           </div>
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-xl border border-white/50 dark:border-slate-800 text-center group transition-all hover:bg-emerald-50/10">
+          <div 
+            onClick={() => onStatClick('processed')}
+            className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-xl border border-white/50 dark:border-slate-800 text-center group transition-all hover:bg-emerald-50/10 cursor-pointer active:scale-95"
+          >
             <p className="text-[10px] text-slate-400 font-black uppercase mb-1 tracking-widest">Hoàn thành</p>
             <p className="text-3xl font-black text-emerald-500">{isLoading ? <Loader2 className="animate-spin inline" size={20} /> : stats.completed}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800">
-            <div className="flex items-center justify-between mb-6">
+        <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 mb-6">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-2xl text-blue-600"><ActivityIcon size={18} /></div>
               <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Biểu đồ hoạt động</h2>
-              <button onClick={fetchDashboardData} className="p-2 text-slate-400 hover:text-blue-500 transition-colors">
-                <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-              </button>
             </div>
-            <div className="h-64 w-full">
-              {isLoading ? (
-                 <div className="h-full w-full flex items-center justify-center opacity-20"><Loader2 size={40} className="animate-spin" /></div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} margin={{ top: 0, right: 0, left: -25, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? "#334155" : "#f1f5f9"} />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900, fill: "#94a3b8" }} interval={0} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900, fill: "#94a3b8" }} />
-                    <Tooltip 
-                      cursor={{ fill: isDarkMode ? '#1e293b' : '#f8fafc', radius: 8 }} 
-                      contentStyle={{ backgroundColor: isDarkMode ? '#0f172a' : '#ffffff', borderRadius: '16px', border: 'none', fontSize: '11px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.1)' }} 
-                    />
-                    <Bar dataKey="detected" name="Phát hiện" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={8} />
-                    <Bar dataKey="processed" name="Đã xử lý" fill="#10b981" radius={[4, 4, 0, 0]} barSize={8} />
-                    <Bar dataKey="nvvh" name="NVVH" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={8} />
-                    <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', paddingTop: '15px' }} />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
+            <button onClick={fetchDashboardData} className="p-2 text-slate-400 hover:text-blue-500 transition-colors">
+              <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+            </button>
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {isLoading ? (
+              Array(4).fill(0).map((_, i) => (
+                <div key={i} className="h-48 bg-slate-50 dark:bg-slate-900/50 rounded-3xl animate-pulse" />
+              ))
+            ) : (
+              chartData.map((entry, idx) => {
+                const completed = entry.processed;
+                const processing = entry.nvvh;
+                const pending = Math.max(0, entry.detected - completed - processing);
+                
+                const data = [
+                  { name: 'Xử lý xong', value: completed, color: '#10b981', grad: `gradGreen-${idx}` },
+                  { name: 'Đang xử lý', value: processing, color: '#f59e0b', grad: `gradAmber-${idx}` },
+                  { name: 'Chưa xử lý', value: pending, color: '#ef4444', grad: `gradRed-${idx}` }
+                ].filter(d => d.value > 0);
+
+                return (
+                  <div key={idx} className="flex flex-col items-center group">
+                    <div className="h-60 w-full relative bg-slate-900/5 dark:bg-slate-900/20 rounded-[2.5rem] overflow-hidden shadow-inner border border-slate-200/50 dark:border-slate-700/30 transition-all hover:shadow-2xl hover:scale-[1.02] duration-500">
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-white/5 pointer-events-none" />
+                      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                        <PieChart>
+                          <defs>
+                            <linearGradient id={`gradGreen-${idx}`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#10b981" />
+                              <stop offset="100%" stopColor="#059669" />
+                            </linearGradient>
+                            <linearGradient id={`gradAmber-${idx}`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#f59e0b" />
+                              <stop offset="100%" stopColor="#d97706" />
+                            </linearGradient>
+                            <linearGradient id={`gradRed-${idx}`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#ef4444" />
+                              <stop offset="100%" stopColor="#b91c1c" />
+                            </linearGradient>
+                            <filter id="vividShadow" height="150%">
+                              <feGaussianBlur in="SourceAlpha" stdDeviation="3" />
+                              <feOffset dx="0" dy="10" result="offsetblur" />
+                              <feComponentTransfer>
+                                <feFuncA type="linear" slope="0.5" />
+                              </feComponentTransfer>
+                              <feMerge>
+                                <feMergeNode />
+                                <feMergeNode in="SourceGraphic" />
+                              </feMerge>
+                            </filter>
+                          </defs>
+                          <Pie
+                            data={data}
+                            cx="50%"
+                            cy="50%"
+                            startAngle={90}
+                            endAngle={-270}
+                            innerRadius={35}
+                            outerRadius={75}
+                            paddingAngle={4}
+                            dataKey="value"
+                            stroke="none"
+                            filter="url(#vividShadow)"
+                            animationDuration={1800}
+                            labelLine={false}
+                            label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                              const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                              const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
+                              const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
+                              if (percent < 0.1) return null;
+                              return (
+                                <text 
+                                  x={x} 
+                                  y={y} 
+                                  fill="white" 
+                                  textAnchor="middle" 
+                                  dominantBaseline="central" 
+                                  className="text-[11px] font-black drop-shadow-lg"
+                                >
+                                  {(percent * 100).toFixed(0)}%
+                                </text>
+                              );
+                            }}
+                          >
+                            {data.map((entry, index) => (
+                              <Cell 
+                                key={`cell-${index}`} 
+                                fill={`url(#${entry.grad})`}
+                                className="transition-all duration-500 hover:opacity-80 cursor-pointer"
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip 
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                const d = payload[0].payload;
+                                return (
+                                  <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">{d.name}</p>
+                                    <p className="text-lg font-black text-slate-900 dark:text-white">{d.value}</p>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter leading-none">Tổng</p>
+                        <p className="text-lg font-black text-slate-700 dark:text-slate-300">{entry.detected}</p>
+                      </div>
+                    </div>
+                    <div className="mt-5 text-center w-full">
+                      <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-800 dark:text-slate-200 mb-3">{entry.name}</p>
+                      <div className="grid grid-cols-3 gap-1 px-2">
+                        <div className="flex flex-col items-center p-1.5 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/50">
+                          <span className="text-[8px] font-black text-emerald-600 uppercase tracking-tighter mb-0.5">Đã xử lý</span>
+                          <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-400">{completed}</span>
+                        </div>
+                        <div className="flex flex-col items-center p-1.5 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-800/50">
+                          <span className="text-[8px] font-black text-amber-600 uppercase tracking-tighter mb-0.5">NVVH đề xuất</span>
+                          <span className="text-[11px] font-black text-amber-700 dark:text-amber-400">{processing}</span>
+                        </div>
+                        <div className="flex flex-col items-center p-1.5 bg-rose-50 dark:bg-rose-900/20 rounded-xl border border-rose-100 dark:border-rose-800/50">
+                          <span className="text-[8px] font-black text-rose-600 uppercase tracking-tighter mb-0.5">Phát hiện</span>
+                          <span className="text-[11px] font-black text-rose-700 dark:text-rose-400">{pending}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div className="bg-white dark:bg-slate-800 p-6 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl text-emerald-600"><Users size={18} /></div>
@@ -534,12 +672,21 @@ const TableCellContent: React.FC<{ value: any, header: string }> = ({ value, hea
   const isImageColumn = lowerHeader.includes('hình') || lowerHeader.includes('minh chứng') || lowerHeader.includes('ảnh');
   
   if (!isImageColumn) {
-  return (
-    <div className="block break-words min-w-[150px] leading-normal">
-      {value ?? ''}
-    </div>
-  );
-}
+    const isSTT = lowerHeader === 'stt';
+    const isTime = lowerHeader.includes('thời gian');
+    const isReporter = lowerHeader.includes('người phát hiện');
+    
+    return (
+      <div className={`block break-words leading-normal ${
+        isSTT ? 'min-w-[30px] text-center' : 
+        isTime ? 'min-w-[80px]' : 
+        isReporter ? 'min-w-[100px]' : 
+        'min-w-[160px]'
+      }`}>
+        {value ?? ''}
+      </div>
+    );
+  }
 
   const potentialUrls = valStr.split(/[,\n\s]+/).map(s => s.trim()).filter(s => s.length > 5);
   const images = potentialUrls.filter(url => url.startsWith('http')).map(url => {
@@ -676,23 +823,30 @@ const EditModal: React.FC<EditModalProps> = ({ sheet, row, headers, rowData, onC
   );
 };
 
-const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row: number } | null }> = ({ jumpTo }) => {
+const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?: 'all' | 'processed' | 'pending' } | null }> = ({ jumpTo }) => {
   const MAX_COLS = 14; 
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState<any[]>([]);
   const [activeSheetName, setActiveSheetName] = useState(jumpTo?.sheet || 'Quản lý hành chính');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState<'all' | 'processed' | 'pending'>('all');
-  const [editTarget, setEditTarget] = useState<{ row: number, data: any[] } | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<'all' | 'processed' | 'pending'>(jumpTo?.status || 'all');
+  const [editTarget, setEditTarget] = useState<{ row: number, data: any[], sheet: string } | null>(null);
   const lastScrolledRef = useRef<string | null>(null);
   const fetchIdRef = useRef(0);
 
-  const categories = [{ name: 'Quản lý hành chính' }, { name: 'Thiết bị công trình' }, { name: 'An toàn vệ sinh lao động' }, { name: 'TPM, Kaizen' }];
+  const categories = [
+    { name: 'Tất cả', value: 'all' },
+    { name: 'Quản lý hành chính', value: 'Quản lý hành chính' }, 
+    { name: 'Thiết bị công trình', value: 'Thiết bị công trình' }, 
+    { name: 'An toàn vệ sinh lao động', value: 'An toàn vệ sinh lao động' }, 
+    { name: 'TPM, Kaizen', value: 'TPM, Kaizen' }
+  ];
 
   useEffect(() => {
     if (jumpTo) {
       setActiveSheetName(jumpTo.sheet);
+      setSelectedStatus(jumpTo.status || 'all');
       setSearchTerm(''); 
     }
   }, [jumpTo]);
@@ -700,21 +854,57 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row: number } | null }
   const fetchSheetData = useCallback(async () => {
     const currentFetchId = ++fetchIdRef.current;
     setIsLoading(true);
-    // Clear data when starting a new fetch to avoid showing stale rows from previous sheet
     setData([]); 
     
     try {
-      const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(activeSheetName)}`;
-      const response = await fetch(url);
-      const text = await response.text();
-      const match = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
-      
-      if (match && currentFetchId === fetchIdRef.current) {
-        const json = JSON.parse(match[1]);
-        if (json.table && json.table.rows) {
-          const rows = json.table.rows.map((row: any) => row.c.map((cell: any) => cell ? (cell.f || cell.v || '') : ''));
-          const headers = json.table.cols.map((col: any) => col.label || '');
-          setData([headers, ...rows]);
+      if (activeSheetName === 'all') {
+        const promises = CATEGORIES.map(async (cat) => {
+          const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(cat)}`;
+          const response = await fetch(url);
+          const text = await response.text();
+          const match = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
+          if (match) {
+            const json = JSON.parse(match[1]);
+            if (json.table && json.table.rows) {
+              const rows = json.table.rows.map((row: any) => {
+                const cells = row.c.map((cell: any) => {
+                  if (!cell) return '';
+                  return cell.f != null ? cell.f : (cell.v != null ? String(cell.v) : '');
+                });
+                // Add sheet name to the row data for reference
+                return [...cells, cat];
+              });
+              return { rows, headers: json.table.cols.map((col: any) => col.label || '') };
+            }
+          }
+          return { rows: [], headers: [] };
+        });
+
+        const results = await Promise.all(promises);
+        if (currentFetchId === fetchIdRef.current) {
+          const allRows = results.flatMap(r => r.rows);
+          const baseHeaders = results.find(r => r.headers.length > 0)?.headers || [];
+          const headersWithSheet = [...baseHeaders, 'Bộ phận'];
+          setData([headersWithSheet, ...allRows]);
+        }
+      } else {
+        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(activeSheetName)}`;
+        const response = await fetch(url);
+        const text = await response.text();
+        const match = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
+        
+        if (match && currentFetchId === fetchIdRef.current) {
+          const json = JSON.parse(match[1]);
+          if (json.table && json.table.rows) {
+            const rows = json.table.rows.map((row: any) => 
+              row.c.map((cell: any) => {
+                if (!cell) return '';
+                return cell.f != null ? cell.f : (cell.v != null ? String(cell.v) : '');
+              })
+            );
+            const headers = json.table.cols.map((col: any) => col.label || '');
+            setData([headers, ...rows]);
+          }
         }
       }
     } catch (err) { 
@@ -877,7 +1067,7 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row: number } | null }
   };
 
   return (
-    <div className="flex flex-col h-full animate-in fade-in duration-500 overflow-x-hidden">
+    <div className="flex flex-col h-full animate-in fade-in duration-500 overflow-hidden">
       <div className="bg-blue-800 p-4 shadow-xl flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <TableProperties className="text-white" size={20} />
@@ -901,13 +1091,13 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row: number } | null }
         <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
           {categories.map((cat) => (
             <button 
-              key={cat.name} 
+              key={cat.value} 
               onClick={() => {
-                setActiveSheetName(cat.name);
+                setActiveSheetName(cat.value);
                 setSelectedMonth('all');
                 setSelectedStatus('all');
               }} 
-              className={`px-4 py-2 rounded-xl whitespace-nowrap text-[10px] font-black uppercase tracking-widest transition-all ${activeSheetName === cat.name ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}
+              className={`px-4 py-2 rounded-xl whitespace-nowrap text-[10px] font-black uppercase tracking-widest transition-all ${activeSheetName === cat.value ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}
             >
               {cat.name}
             </button>
@@ -948,52 +1138,78 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row: number } | null }
           </div>
         </div>
       </div>
-      <div className="flex-1 overflow-auto p-4 bg-slate-50 dark:bg-slate-950">
-        {isLoading ? (<div className="h-full flex flex-col items-center justify-center space-y-3"><Loader2 size={48} className="animate-spin text-blue-500" /></div>) : data.length > 0 ? (
-          <div className="overflow-hidden shadow-2xl rounded-3xl bg-white dark:bg-slate-900 overflow-x-auto border border-slate-100 dark:border-slate-800">
-            <table className="min-w-full divide-y divide-slate-100 dark:divide-slate-800">
-              <thead className="bg-slate-50 dark:bg-slate-800/50">
-                <tr>
-                  {headers.slice(0, MAX_COLS).map((h: string, idx: number) => (
-                    <th key={idx} className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-r last:border-0">{h}</th>
-                  ))}
-                  <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                {filteredRows.map((item) => {
-                  const isJumped = jumpTo?.row === item.index && jumpTo?.sheet === activeSheetName;
-                  return (
-                    <tr
-                      key={item.index}
-                      id={`row-${item.index}`}
-                      className={`${isJumped ? 'bg-yellow-100 dark:bg-yellow-900/40 ring-2 ring-yellow-400 ring-inset' : ''} transition-all duration-500`}
-                    >
-                      {item.values.slice(0, MAX_COLS).map((cell: any, cIdx: number) => (
-                        <td key={cIdx} className="px-6 py-4 text-xs text-slate-700 dark:text-slate-300 border-r last:border-0 align-top">
-                          <TableCellContent value={cell} header={headers[cIdx]} />
-                        </td>
-                      ))}
-                      <td className="px-6 py-4 align-top">
-                        <button 
-                          onClick={() => setEditTarget({ row: item.index, data: item.values })}
-                          className="p-2 text-blue-600 bg-blue-50 dark:bg-blue-900/30 rounded-xl hover:bg-blue-100 transition-colors shadow-sm"
-                        >
-                          <Edit3 size={16} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+      <div className="flex-1 min-h-0 p-4 bg-slate-50 dark:bg-slate-950 flex flex-col">
+        {isLoading ? (
+          <div className="h-full flex flex-col items-center justify-center space-y-3">
+            <Loader2 size={48} className="animate-spin text-blue-500" />
           </div>
-        ) : (<div className="h-full flex flex-col items-center justify-center opacity-40"><FileSpreadsheet size={80} /></div>)}
+        ) : data.length > 0 ? (
+          <div className="flex-1 flex flex-col shadow-2xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 overflow-hidden relative">
+            <div className="flex-1 overflow-auto custom-scrollbar pb-2">
+              <table className="border-separate border-spacing-0 table-fixed" style={{ width: 'max-content', minWidth: '100%' }}>
+                <thead className="bg-slate-50 dark:bg-slate-800 sticky top-0 z-20 shadow-sm">
+                  <tr>
+                    {headers.slice(0, MAX_COLS).map((h: string, idx: number) => {
+                      const lowerH = h.toLowerCase();
+                      const isSTT = lowerH === 'stt';
+                      const isTime = lowerH.includes('thời gian');
+                      const isReporter = lowerH.includes('người phát hiện');
+                      const isImage = lowerH.includes('hình') || lowerH.includes('ảnh') || lowerH.includes('minh chứng');
+                      
+                      let width = '180px';
+                      if (isSTT) width = '50px';
+                      else if (isTime) width = '100px';
+                      else if (isReporter) width = '120px';
+                      else if (isImage) width = '140px';
+
+                      return (
+                        <th key={idx} style={{ width }} className="px-4 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-r border-b border-slate-100 dark:border-slate-700 last:border-r-0 bg-slate-50 dark:bg-slate-800 whitespace-nowrap">
+                          {h}
+                        </th>
+                      );
+                    })}
+                    <th style={{ width: '80px' }} className="px-4 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                  {filteredRows.map((item) => {
+                    const isJumped = jumpTo?.row === item.index && jumpTo?.sheet === activeSheetName;
+                    return (
+                      <tr
+                        key={item.index}
+                        id={`row-${item.index}`}
+                        className={`${isJumped ? 'bg-yellow-100 dark:bg-yellow-900/40 ring-2 ring-yellow-400 ring-inset' : ''} transition-all duration-500`}
+                      >
+                        {item.values.slice(0, MAX_COLS).map((cell: any, cIdx: number) => (
+                          <td key={cIdx} className="px-4 py-4 text-xs text-slate-700 dark:text-slate-300 border-r border-slate-100 dark:border-slate-800/50 last:border-r-0 align-top overflow-hidden">
+                            <TableCellContent value={cell} header={headers[cIdx]} />
+                          </td>
+                        ))}
+                        <td className="px-4 py-4 align-top border-slate-100 dark:border-slate-800/50">
+                          <button 
+                            onClick={() => setEditTarget({ row: item.index, data: item.values, sheet: activeSheetName === 'all' ? item.values[item.values.length - 1] : activeSheetName })}
+                            className="p-2 text-blue-600 bg-blue-50 dark:bg-blue-900/30 rounded-xl hover:bg-blue-100 transition-colors shadow-sm"
+                          >
+                            <Edit3 size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div className="h-full flex flex-col items-center justify-center opacity-40">
+            <FileSpreadsheet size={80} />
+          </div>
+        )}
       </div>
 
       {editTarget && (
         <EditModal 
-          sheet={activeSheetName} 
+          sheet={editTarget.sheet} 
           row={editTarget.row} 
           headers={data[0]} 
           rowData={editTarget.data} 
@@ -1123,7 +1339,7 @@ const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'report' | 'processing' | 'summary'>('dashboard');
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
-  const [summaryJump, setSummaryJump] = useState<{ sheet: string, row: number } | null>(null);
+  const [summaryJump, setSummaryJump] = useState<{ sheet: string, row?: number, status?: 'all' | 'processed' | 'pending' } | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })), 10000);
@@ -1136,20 +1352,37 @@ const App: React.FC = () => {
   };
 
   const handleActivityClick = (sheet: string, row: number) => {
-    setSummaryJump({ sheet, row });
+    setSummaryJump({ sheet, row, status: 'all' });
+    setActiveTab('summary');
+  };
+
+  const handleStatClick = (status: 'all' | 'processed' | 'pending') => {
+    setSummaryJump({ sheet: 'all', status });
     setActiveTab('summary');
   };
 
   return (
-    <div className={`min-h-screen relative flex flex-col pb-24 shadow-2xl bg-background-light dark:bg-background-dark overflow-x-hidden w-full`}>
+    <div className={`h-screen relative flex flex-col pb-24 shadow-2xl bg-background-light dark:bg-background-dark overflow-hidden w-full`}>
       <button onClick={toggleDarkMode} className="fixed top-6 right-6 w-10 h-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-full shadow-lg flex items-center justify-center border border-white dark:border-slate-700 z-50 transition-all active:scale-90">
         {isDarkMode ? <Sun className="text-amber-400" size={18} /> : <Moon className="text-slate-600" size={18} />}
       </button>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar w-full max-w-7xl mx-auto">
-        {activeTab === 'dashboard' && <Dashboard isDarkMode={isDarkMode} onActivityClick={handleActivityClick} />}
-        {activeTab === 'report' && <DefectForm />}
-        {activeTab === 'processing' && <ProcessingForm />}
+      <div className="flex-1 min-h-0 overflow-hidden w-full max-w-7xl mx-auto flex flex-col">
+        {activeTab === 'dashboard' && (
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <Dashboard isDarkMode={isDarkMode} onActivityClick={handleActivityClick} onStatClick={handleStatClick} />
+          </div>
+        )}
+        {activeTab === 'report' && (
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <DefectForm />
+          </div>
+        )}
+        {activeTab === 'processing' && (
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <ProcessingForm />
+          </div>
+        )}
         {activeTab === 'summary' && <DefectSummary jumpTo={summaryJump} />}
       </div>
 
@@ -1160,15 +1393,15 @@ const App: React.FC = () => {
         </button>
         <button onClick={() => { setActiveTab('report'); setSummaryJump(null); }} className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${activeTab === 'report' ? 'text-blue-600 scale-110' : 'text-slate-400'}`}>
           <div className={`p-2 rounded-xl ${activeTab === 'report' ? 'bg-blue-600/10' : ''}`}><ClipboardList size={22} /></div>
-          <span className="text-[8px] font-black uppercase tracking-tight">Báo cáo</span>
+          <span className="text-[8px] font-black uppercase tracking-tight">Cập nhật tồn tại</span>
         </button>
         <button onClick={() => { setActiveTab('processing'); setSummaryJump(null); }} className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${activeTab === 'processing' ? 'text-blue-600 scale-110' : 'text-slate-400'}`}>
           <div className={`p-2 rounded-xl ${activeTab === 'processing' ? 'bg-blue-600/10' : ''}`}><Camera size={22} /></div>
-          <span className="text-[8px] font-black uppercase tracking-tight">Xử lý</span>
+          <span className="text-[8px] font-black uppercase tracking-tight">Cập nhật xử lý</span>
         </button>
         <button onClick={() => setActiveTab('summary')} className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${activeTab === 'summary' ? 'text-blue-600 scale-110' : 'text-slate-400'}`}>
           <div className={`p-2 rounded-xl ${activeTab === 'summary' ? 'bg-blue-600/10' : ''}`}><TableProperties size={22} /></div>
-          <span className="text-[8px] font-black uppercase tracking-tight">Tổng hợp</span>
+          <span className="text-[8px] font-black uppercase tracking-tight">Bảng tổng hợp</span>
         </button>
       </nav>
     </div>
