@@ -492,7 +492,6 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
                 <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl text-emerald-600 shadow-inner"><Users size={20} /></div>
                 <div>
                   <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Thống kê hoạt động</h2>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Bảng xếp hạng đóng góp nhân sự</p>
                 </div>
               </div>
             </div>
