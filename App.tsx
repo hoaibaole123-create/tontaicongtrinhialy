@@ -1031,14 +1031,7 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
         width: h.toLowerCase().includes('hình') || h.toLowerCase().includes('ảnh') ? 25 : 20
       }));
 
-      // Add data rows and collect image tasks
-      const imageTasks: { 
-        url: string, 
-        fetchUrl: string, 
-        rowNumber: number, 
-        colIndex: number 
-      }[] = [];
-
+      // Add data rows
       for (const item of filteredRows) {
         const rowData = item.values.slice(0, MAX_COLS);
         const row = worksheet.addRow(rowData);
@@ -1058,94 +1051,78 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
             if (imageUrls.length > 0) {
               const url = imageUrls[0];
               let fetchUrl = url;
-              
-              // Enhanced Drive detection
               if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
                 const driveMatch = url.match(/\/d\/(.+?)\/(view|edit|usp|copy)/) || 
-                                  url.match(/[?&]id=(.+?)(&|$)/) ||
+                                  url.match(/id=(.+?)(&|$)/) ||
                                   url.match(/\/file\/d\/(.+?)\//);
                 if (driveMatch && driveMatch[1]) {
                   fetchUrl = `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w800`;
                 }
               }
-              
-              imageTasks.push({ url, fetchUrl, rowNumber: row.number, colIndex: i });
+
+              try {
+                // Small delay to avoid overwhelming the proxy or source
+                await new Promise(resolve => setTimeout(resolve, 50));
+
+                const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(fetchUrl)}`;
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const blob = await response.blob();
+                if (blob.size < 100) throw new Error("Invalid image size");
+
+                const arrayBuffer = await blob.arrayBuffer();
+                
+                // Determine valid extension for ExcelJS
+                let extension: 'png' | 'jpeg' | 'gif' = 'png';
+                const mimeType = blob.type.toLowerCase();
+                if (mimeType.includes('png')) extension = 'png';
+                else if (mimeType.includes('gif')) extension = 'gif';
+                else if (mimeType.includes('jpg') || mimeType.includes('jpeg')) extension = 'jpeg';
+                else extension = 'jpeg'; // Default fallback
+
+                // Get image dimensions to maintain aspect ratio
+                const imgObj = new Image();
+                const objectUrl = URL.createObjectURL(blob);
+                imgObj.src = objectUrl;
+                await new Promise((resolve) => {
+                  imgObj.onload = resolve;
+                  imgObj.onerror = resolve; // Continue even if dimensions fail
+                });
+                
+                const naturalWidth = imgObj.width || 100;
+                const naturalHeight = imgObj.height || 100;
+                URL.revokeObjectURL(objectUrl);
+
+                // Target max dimensions in pixels (approx for 25 width / 80 height)
+                // Excel points to pixels is roughly 1.33
+                const maxWidth = 180; 
+                const maxHeight = 100;
+                
+                const ratio = Math.min(maxWidth / naturalWidth, maxHeight / naturalHeight, 1);
+                const finalWidth = naturalWidth * ratio;
+                const finalHeight = naturalHeight * ratio;
+
+                const imageId = workbook.addImage({
+                  buffer: arrayBuffer,
+                  extension: extension,
+                });
+
+                worksheet.addImage(imageId, {
+                  tl: { col: i + 0.05, row: row.number - 0.95 } as any,
+                  ext: { width: finalWidth, height: finalHeight },
+                  editAs: 'oneCell'
+                });
+                
+                // Clear the text in image cell to avoid clutter
+                row.getCell(i + 1).value = '';
+              } catch (e) {
+                console.error("Failed to fetch image for excel:", fetchUrl, e);
+                row.getCell(i + 1).value = 'Lỗi ảnh: ' + url;
+              }
             }
           }
         }
-      }
-
-      // Process images in parallel chunks to avoid overwhelming the server
-      const CHUNK_SIZE = 5;
-      for (let i = 0; i < imageTasks.length; i += CHUNK_SIZE) {
-        const chunk = imageTasks.slice(i, i + CHUNK_SIZE);
-        await Promise.all(chunk.map(async (task) => {
-          try {
-            let response;
-            let blob;
-            
-            // Try local proxy first
-            try {
-              const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(task.fetchUrl)}`;
-              response = await fetch(proxyUrl);
-              if (!response.ok) throw new Error(`Local proxy failed with ${response.status}`);
-              blob = await response.blob();
-            } catch (localProxyErr) {
-              // Fallback to a public Google proxy
-              const fallbackUrl = `https://images1-focus-opensocial.googleusercontent.com/gadgets/proxy?container=focus&refresh=2592000&url=${encodeURIComponent(task.fetchUrl)}`;
-              response = await fetch(fallbackUrl);
-              if (!response.ok) throw new Error(`Public fallback failed with ${response.status}`);
-              blob = await response.blob();
-            }
-            
-            if (blob.size < 100) throw new Error("Invalid image size");
-
-            const arrayBuffer = await blob.arrayBuffer();
-            
-            // Determine valid extension for ExcelJS
-            let extension: 'png' | 'jpeg' | 'gif' = 'png';
-            const mimeType = blob.type.toLowerCase();
-            if (mimeType.includes('png')) extension = 'png';
-            else if (mimeType.includes('gif')) extension = 'gif';
-            else if (mimeType.includes('jpg') || mimeType.includes('jpeg')) extension = 'jpeg';
-            else extension = 'jpeg';
-
-            // Get image dimensions
-            const imgObj = new Image();
-            const objectUrl = URL.createObjectURL(blob);
-            imgObj.src = objectUrl;
-            await new Promise((resolve) => {
-              imgObj.onload = resolve;
-              imgObj.onerror = resolve;
-            });
-            
-            const naturalWidth = imgObj.width || 100;
-            const naturalHeight = imgObj.height || 100;
-            URL.revokeObjectURL(objectUrl);
-
-            const maxWidth = 180; 
-            const maxHeight = 100;
-            const ratio = Math.min(maxWidth / naturalWidth, maxHeight / naturalHeight, 1);
-            const finalWidth = naturalWidth * ratio;
-            const finalHeight = naturalHeight * ratio;
-
-            const imageId = workbook.addImage({
-              buffer: arrayBuffer,
-              extension: extension,
-            });
-
-            worksheet.addImage(imageId, {
-              tl: { col: task.colIndex + 0.05, row: task.rowNumber - 0.95 } as any,
-              ext: { width: finalWidth, height: finalHeight },
-              editAs: 'oneCell'
-            });
-            
-            worksheet.getRow(task.rowNumber).getCell(task.colIndex + 1).value = '';
-          } catch (e) {
-            console.error("Failed to fetch image for excel:", task.fetchUrl, e);
-            worksheet.getRow(task.rowNumber).getCell(task.colIndex + 1).value = 'Lỗi ảnh: ' + task.url;
-          }
-        }));
       }
 
       const buffer = await workbook.xlsx.writeBuffer();
