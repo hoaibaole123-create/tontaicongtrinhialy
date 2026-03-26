@@ -238,7 +238,7 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
         return b.row - a.row; // If same time, higher row index is newer
       });
       
-      setRecentActivities(sortedActivities.slice(0, 6));
+      setRecentActivities(sortedActivities.slice(0, 5));
 
     } catch (err) {
       console.error("Dashboard error:", err);
@@ -266,7 +266,7 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
         </div>
       </div>
 
-      <main className="px-4 -mt-12 relative z-10 flex-1 max-w-5xl mx-auto w-full">
+      <main className="px-4 -mt-12 relative z-10 flex-1 w-full">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div 
             onClick={() => onStatClick('all')}
@@ -436,57 +436,6 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl text-emerald-600"><Users size={18} /></div>
-              <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Thống kê hoạt động</h2>
-            </div>
-            
-            <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-              {isLoading ? (
-                Array(3).fill(0).map((_, i) => (
-                  <div key={i} className="h-16 bg-slate-50 dark:bg-slate-900/50 rounded-2xl animate-pulse" />
-                ))
-              ) : topContributors.length > 0 ? (
-                topContributors.map((person, idx) => (
-                  <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 text-[10px] font-black">
-                          {idx + 1}
-                        </div>
-                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-tight">
-                          {person.name}
-                        </span>
-                      </div>
-                      <span className="text-[10px] font-black text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-full">
-                        Tổng: {person.total}
-                      </span>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-2">
-                      {Object.entries(person.monthly)
-                        .sort((a, b) => {
-                          const [m1, y1] = a[0].split('/').map(Number);
-                          const [m2, y2] = b[0].split('/').map(Number);
-                          return y2 !== y1 ? y2 - y1 : m2 - m1;
-                        })
-                        .map(([month, count]) => (
-                          <div key={month} className="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2 py-1 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm">
-                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">T{month}</span>
-                            <span className="text-[9px] font-bold text-slate-600 dark:text-slate-300">{count}</span>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-center text-[10px] text-slate-400 py-4 uppercase font-bold tracking-widest">Chưa có dữ liệu nhân sự</p>
-              )}
-            </div>
-          </div>
-        </div>
 
         <div className="bg-white dark:bg-slate-800 p-6 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 mb-6">
           <div className="flex items-center gap-3 mb-6">
@@ -534,6 +483,83 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
                 <p className="text-[10px] uppercase font-black tracking-widest mt-3">Hiện chưa có hoạt động</p>
               </div>
             )}
+          </div>
+        </div>
+        <div className="mb-6">
+          <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl text-emerald-600 shadow-inner"><Users size={20} /></div>
+                <div>
+                  <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Thống kê hoạt động</h2>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Bảng xếp hạng đóng góp nhân sự</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-h-[400px] overflow-y-auto pr-2 pb-4 custom-scrollbar">
+              {isLoading ? (
+                Array(6).fill(0).map((_, i) => (
+                  <div key={i} className="h-24 bg-slate-50 dark:bg-slate-900/50 rounded-3xl animate-pulse" />
+                ))
+              ) : topContributors.length > 0 ? (
+                topContributors.map((person, idx) => (
+                  <div key={idx} className="relative group p-5 bg-slate-50 dark:bg-slate-900/40 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 transition-all hover:shadow-xl hover:bg-white dark:hover:bg-slate-800 hover:-translate-y-1">
+                    {/* Badge for Top 3 */}
+                    {idx < 3 && (
+                      <div className={`absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black shadow-lg z-10 ${
+                        idx === 0 ? 'bg-amber-400 text-white' : 
+                        idx === 1 ? 'bg-slate-300 text-slate-700' : 
+                        'bg-orange-400 text-white'
+                      }`}>
+                        {idx === 0 ? '🏆' : idx + 1}
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-black shadow-inner shrink-0 ${
+                        idx === 0 ? 'bg-gradient-to-br from-amber-100 to-amber-200 text-amber-600' :
+                        idx === 1 ? 'bg-gradient-to-br from-slate-100 to-slate-200 text-slate-600' :
+                        'bg-gradient-to-br from-blue-100 to-blue-200 text-blue-600'
+                      }`}>
+                        {person.name.charAt(0)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-[12px] font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight truncate">
+                          {person.name}
+                        </h3>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">
+                            {person.total}
+                          </span>
+                          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Đóng góp</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                      {Object.entries(person.monthly)
+                        .sort((a, b) => {
+                          const [m1, y1] = a[0].split('/').map(Number);
+                          const [m2, y2] = b[0].split('/').map(Number);
+                          return y2 !== y1 ? y2 - y1 : m2 - m1;
+                        })
+                        .map(([month, count]) => (
+                          <div key={month} className="flex flex-col items-center min-w-[45px] py-1.5 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm transition-all group-hover:border-blue-200 dark:group-hover:border-blue-900/50">
+                            <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">T{month}</span>
+                            <span className="text-[10px] font-black text-slate-700 dark:text-slate-200">{count}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-full py-12 text-center opacity-30 flex flex-col items-center">
+                  <Users size={40} strokeWidth={1} />
+                  <p className="text-[10px] uppercase font-black tracking-widest mt-3">Chưa có dữ liệu nhân sự</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </main>
@@ -629,7 +655,7 @@ const DefectForm: React.FC = () => {
   return (
     <div className="animate-in fade-in duration-500">
       <div className="bg-blue-800 p-4 shadow-md text-center"><h2 className="text-white text-[12px] font-black uppercase tracking-widest">CẬP NHẬT TỒN TẠI & HƯ HỎNG</h2></div>
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="w-full px-4 py-8">
         <form onSubmit={handleSubmit} className="space-y-6 pb-20">
           <section><FormLabel required>Họ và tên người phát hiện</FormLabel><input type="text" className="w-full p-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-[13px] outline-none" required value={formData.reporterName} onChange={(e) => setFormData({...formData, reporterName: e.target.value})} /></section>
           <section><FormLabel required>Phân loại</FormLabel>
@@ -649,7 +675,7 @@ const DefectForm: React.FC = () => {
             </div>
           </section>
           <section><FormLabel required>Tên thiết bị</FormLabel><input type="text" className="w-full p-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-[13px] outline-none" required value={formData.equipmentName} onChange={(e) => setFormData({...formData, equipmentName: e.target.value})} /></section>
-          <section><FormLabel required>Vị trí: Tên cao trình +vị trí( Ví dụ: cao trình 292, tường phía thượng lưu)</FormLabel><input type="text" className="w-full p-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-[13px] outline-none" required value={formData.location} onChange={(e) => setFormData({...formData, location: e.target.value})} /></section>
+          <section><FormLabel required>Địa điểm</FormLabel><input type="text" className="w-full p-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-[13px] outline-none" required value={formData.location} onChange={(e) => setFormData({...formData, location: e.target.value})} /></section>
           <section><FormLabel required>Mô tả</FormLabel><textarea rows={3} className="w-full p-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-[13px] outline-none resize-none" required value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} /></section>
           <section><FormLabel>Hình ảnh</FormLabel>
             <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-8 flex flex-col items-center justify-center text-center bg-slate-50 dark:bg-slate-900 cursor-pointer"><input type="file" ref={fileInputRef} multiple accept="image/*" className="hidden" onChange={handleImageChange} /><UploadCloud className="text-blue-500 mb-4" size={32} /><span className="px-6 py-2 bg-blue-600 text-white text-[11px] font-bold rounded-lg uppercase shadow-md">Chọn hình ảnh</span></div>
@@ -675,12 +701,15 @@ const TableCellContent: React.FC<{ value: any, header: string }> = ({ value, hea
     const isSTT = lowerHeader === 'stt';
     const isTime = lowerHeader.includes('thời gian');
     const isReporter = lowerHeader.includes('người phát hiện');
+    const isCategory = lowerHeader.includes('phân loại');
+    const isArea = lowerHeader.includes('khu vực');
     
     return (
       <div className={`block break-words leading-normal ${
         isSTT ? 'min-w-[30px] text-center' : 
         isTime ? 'min-w-[80px]' : 
         isReporter ? 'min-w-[100px]' : 
+        isCategory || isArea ? 'min-w-[100px]' :
         'min-w-[160px]'
       }`}>
         {value ?? ''}
@@ -704,9 +733,9 @@ const TableCellContent: React.FC<{ value: any, header: string }> = ({ value, hea
 
   return (
     <>
-      <div className="flex flex-wrap gap-1.5 items-center justify-start p-1 min-w-[120px]">
+      <div className="flex flex-wrap gap-2 items-center justify-start p-1 min-w-[200px]">
         {images.map((img, idx) => (
-          <div key={idx} onClick={() => setPreviewIndex(idx)} className="w-12 h-12 bg-slate-100 rounded border border-slate-200 overflow-hidden shrink-0 cursor-pointer"><img src={img.display} className="w-full h-full object-cover" /></div>
+          <div key={idx} onClick={() => setPreviewIndex(idx)} className="w-20 h-20 bg-slate-100 rounded-lg border border-slate-200 overflow-hidden shrink-0 cursor-pointer shadow-sm hover:scale-105 transition-transform"><img src={img.display} className="w-full h-full object-cover" /></div>
         ))}
       </div>
       {previewIndex !== null && (
@@ -1138,7 +1167,7 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
           </div>
         </div>
       </div>
-      <div className="flex-1 min-h-0 p-4 bg-slate-50 dark:bg-slate-950 flex flex-col">
+      <div className="flex-1 min-h-0 p-4 flex flex-col">
         {isLoading ? (
           <div className="h-full flex flex-col items-center justify-center space-y-3">
             <Loader2 size={48} className="animate-spin text-blue-500" />
@@ -1154,13 +1183,16 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
                       const isSTT = lowerH === 'stt';
                       const isTime = lowerH.includes('thời gian');
                       const isReporter = lowerH.includes('người phát hiện');
+                      const isCategory = lowerH.includes('phân loại');
+                      const isArea = lowerH.includes('khu vực');
                       const isImage = lowerH.includes('hình') || lowerH.includes('ảnh') || lowerH.includes('minh chứng');
                       
                       let width = '180px';
                       if (isSTT) width = '50px';
                       else if (isTime) width = '100px';
                       else if (isReporter) width = '120px';
-                      else if (isImage) width = '140px';
+                      else if (isCategory || isArea) width = '120px';
+                      else if (isImage) width = '240px';
 
                       return (
                         <th key={idx} style={{ width }} className="px-4 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-r border-b border-slate-100 dark:border-slate-700 last:border-r-0 bg-slate-50 dark:bg-slate-800 whitespace-nowrap">
@@ -1307,7 +1339,7 @@ if (showSuccess1) {
   );
 }
   return (
-    <div className="animate-in slide-in-from-right duration-500 max-w-2xl mx-auto px-4 py-8">
+    <div className="animate-in slide-in-from-right duration-500 w-full px-4 py-8">
       <div className="flex flex-col items-center mb-8"><h1 className="text-xl font-bold text-blue-600 flex items-center gap-2">📸 Cập nhật xử lý tồn tại</h1></div>
       <form onSubmit={handleSubmit} className="space-y-6 pb-24">
         <section><FormLabel icon="📄">Chọn loại</FormLabel><select className="w-full p-3 rounded-lg border border-slate-300 bg-white" value={formData.sheet} onChange={(e) => setFormData({...formData, sheet: e.target.value, row: ''})}><option value="">-- Chọn loại --</option>{categories.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}</select></section>
@@ -1362,12 +1394,19 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className={`h-screen relative flex flex-col pb-24 shadow-2xl bg-background-light dark:bg-background-dark overflow-hidden w-full`}>
+    <div 
+      className={`h-screen relative flex flex-col pb-24 shadow-2xl overflow-hidden w-full bg-cover bg-center bg-no-repeat transition-all duration-500`}
+      style={{ 
+        backgroundImage: isDarkMode 
+          ? `linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.85)), url('https://images.unsplash.com/photo-1553095066-5014bc7b7f2d?auto=format&fit=crop&q=80&w=2000')`
+          : `linear-gradient(rgba(248, 250, 252, 0.75), rgba(248, 250, 252, 0.75)), url('https://images.unsplash.com/photo-1553095066-5014bc7b7f2d?auto=format&fit=crop&q=80&w=2000')`
+      }}
+    >
       <button onClick={toggleDarkMode} className="fixed top-6 right-6 w-10 h-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-full shadow-lg flex items-center justify-center border border-white dark:border-slate-700 z-50 transition-all active:scale-90">
         {isDarkMode ? <Sun className="text-amber-400" size={18} /> : <Moon className="text-slate-600" size={18} />}
       </button>
 
-      <div className="flex-1 min-h-0 overflow-hidden w-full max-w-7xl mx-auto flex flex-col">
+      <div className="flex-1 min-h-0 overflow-hidden w-full flex flex-col">
         {activeTab === 'dashboard' && (
           <div className="flex-1 overflow-y-auto custom-scrollbar">
             <Dashboard isDarkMode={isDarkMode} onActivityClick={handleActivityClick} onStatClick={handleStatClick} />
@@ -1386,7 +1425,7 @@ const App: React.FC = () => {
         {activeTab === 'summary' && <DefectSummary jumpTo={summaryJump} />}
       </div>
 
-      <nav className="fixed bottom-0 left-0 right-0 mx-auto h-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 flex items-center justify-around px-2 z-50 w-full md:max-w-3xl md:bottom-6 md:rounded-3xl md:shadow-2xl md:border">
+      <nav className="fixed bottom-0 left-0 right-0 mx-auto h-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 flex items-center justify-around px-2 z-50 w-full md:max-w-5xl md:bottom-6 md:rounded-3xl md:shadow-2xl md:border">
         <button onClick={() => { setActiveTab('dashboard'); setSummaryJump(null); }} className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${activeTab === 'dashboard' ? 'text-blue-600 scale-110' : 'text-slate-400'}`}>
           <div className={`p-2 rounded-xl ${activeTab === 'dashboard' ? 'bg-blue-600/10' : ''}`}><LayoutDashboard size={22} /></div>
           <span className="text-[8px] font-black uppercase tracking-tight">Tổng quan</span>
