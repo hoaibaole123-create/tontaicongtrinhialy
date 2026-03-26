@@ -1064,11 +1064,24 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
                 // Small delay to avoid overwhelming the proxy or source
                 await new Promise(resolve => setTimeout(resolve, 50));
 
-                const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(fetchUrl)}`;
-                const response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                let response;
+                let blob;
                 
-                const blob = await response.blob();
+                // Try local proxy first
+                try {
+                  const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(fetchUrl)}`;
+                  response = await fetch(proxyUrl);
+                  if (!response.ok) throw new Error(`Local proxy failed with ${response.status}`);
+                  blob = await response.blob();
+                } catch (localProxyErr) {
+                  console.warn("Local proxy failed, trying public fallback...", localProxyErr);
+                  // Fallback to a public Google proxy
+                  const fallbackUrl = `https://images1-focus-opensocial.googleusercontent.com/gadgets/proxy?container=focus&refresh=2592000&url=${encodeURIComponent(fetchUrl)}`;
+                  response = await fetch(fallbackUrl);
+                  if (!response.ok) throw new Error(`Public fallback failed with ${response.status}`);
+                  blob = await response.blob();
+                }
+                
                 if (blob.size < 100) throw new Error("Invalid image size");
 
                 const arrayBuffer = await blob.arrayBuffer();
@@ -1095,7 +1108,6 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
                 URL.revokeObjectURL(objectUrl);
 
                 // Target max dimensions in pixels (approx for 25 width / 80 height)
-                // Excel points to pixels is roughly 1.33
                 const maxWidth = 180; 
                 const maxHeight = 100;
                 
