@@ -238,7 +238,7 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
         return b.row - a.row; // If same time, higher row index is newer
       });
       
-      setRecentActivities(sortedActivities.slice(0, 5));
+      setRecentActivities(sortedActivities.slice(0, 6));
 
     } catch (err) {
       console.error("Dashboard error:", err);
@@ -254,7 +254,7 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
   return (
     <div className="animate-in fade-in duration-500 pb-10">
       <div className="relative w-full h-64 overflow-hidden">
-        <img alt="Factory" className="w-full h-full object-cover brightness-[0.25]" src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=1200" />
+        <img alt="Factory" className="w-full h-full object-cover brightness-[0.25]" src="https://i.ibb.co/zWPTxZvg/123.png" />
         <div className="absolute inset-0 flex flex-col justify-center items-center px-10 text-center bg-gradient-to-b from-blue-900/30 via-transparent to-slate-900/90">
           <h1 className="text-white text-2xl font-black uppercase tracking-tight drop-shadow-2xl mb-2">
             KIỂM TRA VÀ CẬP NHẬT CÁC HƯ HỎNG, TỒN TẠI VÀ CÁC ĐIỂM KHÔNG PHÙ HỢP
@@ -436,6 +436,56 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
           </div>
         </div>
 
+        
+
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 mb-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-2xl text-blue-600"><Clock size={18} /></div>
+            <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Hoạt động mới nhất</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {isLoading ? (
+              Array(4).fill(0).map((_, i) => (
+                <div key={i} className="h-20 bg-slate-50 dark:bg-slate-900/50 rounded-3xl animate-pulse" />
+              ))
+            ) : recentActivities.length > 0 ? (
+              recentActivities.map((act, idx) => (
+                <div 
+                  key={idx} 
+                  onClick={() => onActivityClick(act.category, act.row)}
+                  className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-900/40 rounded-3xl border border-slate-100 dark:border-slate-800/50 group transition-all hover:shadow-lg cursor-pointer active:scale-[0.98]"
+                >
+                  <div className={`shrink-0 w-12 h-12 rounded-[1.2rem] flex items-center justify-center shadow-sm ${act.isDone ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
+                    {act.isDone ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-[11px] font-black text-slate-800 dark:text-slate-200 truncate leading-tight mb-1 uppercase tracking-tighter">
+                      {act.title}
+                    </h3>
+                    <p className="text-[9px] text-slate-500 dark:text-slate-400 truncate mb-1">
+                      📍 {act.location}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-md">
+                        {act.category.split(',')[0]}
+                      </span>
+                      <span className="text-[8px] font-bold text-slate-400 flex items-center gap-1">
+                        <Clock size={10} /> {act.time.split(' ')[0]}
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight size={14} className="text-slate-300 group-hover:translate-x-1 transition-transform" />
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full py-12 text-center opacity-30 flex flex-col items-center">
+                <ActivityIcon size={40} strokeWidth={1} />
+                <p className="text-[10px] uppercase font-black tracking-widest mt-3">Hiện chưa có hoạt động</p>
+              </div>
+            )}
+          </div>
+        </div>
         <div className="mb-6">
           <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800">
             <div className="flex items-center justify-between mb-8">
@@ -511,55 +561,6 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
                 </div>
               )}
             </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 mb-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-2xl text-blue-600"><Clock size={18} /></div>
-            <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Hoạt động mới nhất</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {isLoading ? (
-              Array(4).fill(0).map((_, i) => (
-                <div key={i} className="h-20 bg-slate-50 dark:bg-slate-900/50 rounded-3xl animate-pulse" />
-              ))
-            ) : recentActivities.length > 0 ? (
-              recentActivities.map((act, idx) => (
-                <div 
-                  key={idx} 
-                  onClick={() => onActivityClick(act.category, act.row)}
-                  className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-900/40 rounded-3xl border border-slate-100 dark:border-slate-800/50 group transition-all hover:shadow-lg cursor-pointer active:scale-[0.98]"
-                >
-                  <div className={`shrink-0 w-12 h-12 rounded-[1.2rem] flex items-center justify-center shadow-sm ${act.isDone ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
-                    {act.isDone ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-[11px] font-black text-slate-800 dark:text-slate-200 truncate leading-tight mb-1 uppercase tracking-tighter">
-                      {act.title}
-                    </h3>
-                    <p className="text-[9px] text-slate-500 dark:text-slate-400 truncate mb-1">
-                      📍 {act.location}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-md">
-                        {act.category.split(',')[0]}
-                      </span>
-                      <span className="text-[8px] font-bold text-slate-400 flex items-center gap-1">
-                        <Clock size={10} /> {act.time.split(' ')[0]}
-                      </span>
-                    </div>
-                  </div>
-                  <ChevronRight size={14} className="text-slate-300 group-hover:translate-x-1 transition-transform" />
-                </div>
-              ))
-            ) : (
-              <div className="col-span-full py-12 text-center opacity-30 flex flex-col items-center">
-                <ActivityIcon size={40} strokeWidth={1} />
-                <p className="text-[10px] uppercase font-black tracking-widest mt-3">Hiện chưa có hoạt động</p>
-              </div>
-            )}
           </div>
         </div>
       </main>
@@ -675,7 +676,7 @@ const DefectForm: React.FC = () => {
             </div>
           </section>
           <section><FormLabel required>Tên thiết bị</FormLabel><input type="text" className="w-full p-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-[13px] outline-none" required value={formData.equipmentName} onChange={(e) => setFormData({...formData, equipmentName: e.target.value})} /></section>
-          <section><FormLabel required>Địa điểm</FormLabel><input type="text" className="w-full p-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-[13px] outline-none" required value={formData.location} onChange={(e) => setFormData({...formData, location: e.target.value})} /></section>
+          <section><FormLabel required>Vị trí: tên cao trình + vị trí ( ví dụ: ct 292 phía hạ lưu van đãi H6)</FormLabel><input type="text" className="w-full p-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-[13px] outline-none" required value={formData.location} onChange={(e) => setFormData({...formData, location: e.target.value})} /></section>
           <section><FormLabel required>Mô tả</FormLabel><textarea rows={3} className="w-full p-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-[13px] outline-none resize-none" required value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} /></section>
           <section><FormLabel>Hình ảnh</FormLabel>
             <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-8 flex flex-col items-center justify-center text-center bg-slate-50 dark:bg-slate-900 cursor-pointer"><input type="file" ref={fileInputRef} multiple accept="image/*" className="hidden" onChange={handleImageChange} /><UploadCloud className="text-blue-500 mb-4" size={32} /><span className="px-6 py-2 bg-blue-600 text-white text-[11px] font-bold rounded-lg uppercase shadow-md">Chọn hình ảnh</span></div>
