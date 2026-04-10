@@ -22,6 +22,8 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   UploadCloud,
   Trash2,
   Save,
@@ -115,12 +117,13 @@ const CustomRadio: React.FC<{ label: string, description?: string, name: string,
 
 // --- Dashboard Component ---
 
-const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string, row: number) => void, onStatClick: (status: 'all' | 'processed' | 'pending') => void }> = ({ isDarkMode, onActivityClick, onStatClick }) => {
+const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string, row: number) => void, onStatClick: (sheet: string, status: 'all' | 'processed' | 'pending' | 'nvvh') => void }> = ({ isDarkMode, onActivityClick, onStatClick }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, pending: 0, completed: 0 });
   const [chartData, setChartData] = useState<any[]>([]);
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [topContributors, setTopContributors] = useState<{name: string, total: number, monthly: {[key: string]: number}}[]>([]);
+  const [isStatsExpanded, setIsStatsExpanded] = useState(false);
 
   const fetchDashboardData = useCallback(async () => {
     setIsLoading(true);
@@ -238,7 +241,7 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
         return b.row - a.row; // If same time, higher row index is newer
       });
       
-      setRecentActivities(sortedActivities.slice(0, 6));
+      setRecentActivities(sortedActivities.slice(0, 5));
 
     } catch (err) {
       console.error("Dashboard error:", err);
@@ -261,7 +264,7 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
           </h1>
           <div className="flex items-center gap-2 text-blue-200 text-[10px] font-black uppercase tracking-widest bg-white/10 backdrop-blur-md px-5 py-2 rounded-full border border-white/20">
             <ActivityIcon size={14} className="animate-pulse" />
-            Live Monitoring
+            
           </div>
         </div>
       </div>
@@ -291,7 +294,7 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
           </div>
         </div>
 
-     <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 mb-6">
+        <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 mb-6">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-2xl text-blue-600"><ActivityIcon size={18} /></div>
@@ -345,7 +348,7 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
                         onClick={() => onStatClick(entry.name, 'pending')}
                         className="absolute bottom-4 left-4 z-20 flex flex-col items-center p-3.5 bg-rose-50/90 dark:bg-rose-900/50 backdrop-blur-md rounded-[1.5rem] border border-rose-100 dark:border-rose-800/50 hover:scale-110 active:scale-95 transition-all shadow-xl min-w-[70px]"
                       >
-                        <span className="text-[9px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-1">Chưa xử lý</span>
+                        <span className="text-[9px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-1">Phát hiện</span>
                         <span className="text-lg font-black text-rose-700 dark:text-rose-300 leading-none">{pending}</span>
                       </button>
 
@@ -447,7 +450,6 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
             )}
           </div>
         </div>
-        
 
         <div className="bg-white dark:bg-slate-800 p-6 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 mb-6">
           <div className="flex items-center gap-3 mb-6">
@@ -497,81 +499,90 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
             )}
           </div>
         </div>
+
         <div className="mb-6">
           <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800">
-            <div className="flex items-center justify-between mb-8">
+            <button 
+              onClick={() => setIsStatsExpanded(!isStatsExpanded)}
+              className="w-full flex items-center justify-between mb-0 group"
+            >
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl text-emerald-600 shadow-inner"><Users size={20} /></div>
-                <div>
+                <div className="text-left">
                   <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Thống kê hoạt động</h2>
                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Bảng xếp hạng đóng góp nhân sự</p>
                 </div>
               </div>
-            </div>
+              <div className="p-2 rounded-full bg-slate-50 dark:bg-slate-900 group-hover:bg-slate-100 dark:group-hover:bg-slate-700 transition-colors">
+                {isStatsExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              </div>
+            </button>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-h-[400px] overflow-y-auto pr-2 pb-4 custom-scrollbar">
-              {isLoading ? (
-                Array(6).fill(0).map((_, i) => (
-                  <div key={i} className="h-24 bg-slate-50 dark:bg-slate-900/50 rounded-3xl animate-pulse" />
-                ))
-              ) : topContributors.length > 0 ? (
-                topContributors.map((person, idx) => (
-                  <div key={idx} className="relative group p-5 bg-slate-50 dark:bg-slate-900/40 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 transition-all hover:shadow-xl hover:bg-white dark:hover:bg-slate-800 hover:-translate-y-1">
-                    {/* Badge for Top 3 */}
-                    {idx < 3 && (
-                      <div className={`absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black shadow-lg z-10 ${
-                        idx === 0 ? 'bg-amber-400 text-white' : 
-                        idx === 1 ? 'bg-slate-300 text-slate-700' : 
-                        'bg-orange-400 text-white'
-                      }`}>
-                        {idx === 0 ? '🏆' : idx + 1}
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-black shadow-inner shrink-0 ${
-                        idx === 0 ? 'bg-gradient-to-br from-amber-100 to-amber-200 text-amber-600' :
-                        idx === 1 ? 'bg-gradient-to-br from-slate-100 to-slate-200 text-slate-600' :
-                        'bg-gradient-to-br from-blue-100 to-blue-200 text-blue-600'
-                      }`}>
-                        {person.name.charAt(0)}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-[12px] font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight truncate">
-                          {person.name}
-                        </h3>
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">
-                            {person.total}
-                          </span>
-                          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Đóng góp</span>
+            {isStatsExpanded && (
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-h-[400px] overflow-y-auto pr-2 pb-4 custom-scrollbar animate-in slide-in-from-top-4 duration-300">
+                {isLoading ? (
+                  Array(6).fill(0).map((_, i) => (
+                    <div key={i} className="h-24 bg-slate-50 dark:bg-slate-900/50 rounded-3xl animate-pulse" />
+                  ))
+                ) : topContributors.length > 0 ? (
+                  topContributors.map((person, idx) => (
+                    <div key={idx} className="relative group p-5 bg-slate-50 dark:bg-slate-900/40 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 transition-all hover:shadow-xl hover:bg-white dark:hover:bg-slate-800 hover:-translate-y-1">
+                      {/* Badge for Top 3 */}
+                      {idx < 3 && (
+                        <div className={`absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black shadow-lg z-10 ${
+                          idx === 0 ? 'bg-amber-400 text-white' : 
+                          idx === 1 ? 'bg-slate-300 text-slate-700' : 
+                          'bg-orange-400 text-white'
+                        }`}>
+                          {idx === 0 ? '🏆' : idx + 1}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-black shadow-inner shrink-0 ${
+                          idx === 0 ? 'bg-gradient-to-br from-amber-100 to-amber-200 text-amber-600' :
+                          idx === 1 ? 'bg-gradient-to-br from-slate-100 to-slate-200 text-slate-600' :
+                          'bg-gradient-to-br from-blue-100 to-blue-200 text-blue-600'
+                        }`}>
+                          {person.name.charAt(0)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-[12px] font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight truncate">
+                            {person.name}
+                          </h3>
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">
+                              {person.total}
+                            </span>
+                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Đóng góp</span>
+                          </div>
                         </div>
                       </div>
+                      
+                      <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                        {Object.entries(person.monthly)
+                          .sort((a, b) => {
+                            const [m1, y1] = a[0].split('/').map(Number);
+                            const [m2, y2] = b[0].split('/').map(Number);
+                            return y2 !== y1 ? y2 - y1 : m2 - m1;
+                          })
+                          .map(([month, count]) => (
+                            <div key={month} className="flex flex-col items-center min-w-[45px] py-1.5 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm transition-all group-hover:border-blue-200 dark:group-hover:border-blue-900/50">
+                              <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">T{month}</span>
+                              <span className="text-[10px] font-black text-slate-700 dark:text-slate-200">{count}</span>
+                            </div>
+                          ))}
+                      </div>
                     </div>
-                    
-                    <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-                      {Object.entries(person.monthly)
-                        .sort((a, b) => {
-                          const [m1, y1] = a[0].split('/').map(Number);
-                          const [m2, y2] = b[0].split('/').map(Number);
-                          return y2 !== y1 ? y2 - y1 : m2 - m1;
-                        })
-                        .map(([month, count]) => (
-                          <div key={month} className="flex flex-col items-center min-w-[45px] py-1.5 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm transition-all group-hover:border-blue-200 dark:group-hover:border-blue-900/50">
-                            <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">T{month}</span>
-                            <span className="text-[10px] font-black text-slate-700 dark:text-slate-200">{count}</span>
-                          </div>
-                        ))}
-                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-full py-12 text-center opacity-30 flex flex-col items-center">
+                    <Users size={40} strokeWidth={1} />
+                    <p className="text-[10px] uppercase font-black tracking-widest mt-3">Chưa có dữ liệu nhân sự</p>
                   </div>
-                ))
-              ) : (
-                <div className="col-span-full py-12 text-center opacity-30 flex flex-col items-center">
-                  <Users size={40} strokeWidth={1} />
-                  <p className="text-[10px] uppercase font-black tracking-widest mt-3">Chưa có dữ liệu nhân sự</p>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </main>
@@ -687,7 +698,7 @@ const DefectForm: React.FC = () => {
             </div>
           </section>
           <section><FormLabel required>Tên thiết bị</FormLabel><input type="text" className="w-full p-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-[13px] outline-none" required value={formData.equipmentName} onChange={(e) => setFormData({...formData, equipmentName: e.target.value})} /></section>
-          <section><FormLabel required>Vị trí: tên cao trình + vị trí ( ví dụ: ct 292 phía hạ lưu van đĩa H6)</FormLabel><input type="text" className="w-full p-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-[13px] outline-none" required value={formData.location} onChange={(e) => setFormData({...formData, location: e.target.value})} /></section>
+          <section><FormLabel required>Địa điểm</FormLabel><input type="text" className="w-full p-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-[13px] outline-none" required value={formData.location} onChange={(e) => setFormData({...formData, location: e.target.value})} /></section>
           <section><FormLabel required>Mô tả</FormLabel><textarea rows={3} className="w-full p-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-[13px] outline-none resize-none" required value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} /></section>
           <section><FormLabel>Hình ảnh</FormLabel>
             <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-8 flex flex-col items-center justify-center text-center bg-slate-50 dark:bg-slate-900 cursor-pointer"><input type="file" ref={fileInputRef} multiple accept="image/*" className="hidden" onChange={handleImageChange} /><UploadCloud className="text-blue-500 mb-4" size={32} /><span className="px-6 py-2 bg-blue-600 text-white text-[11px] font-bold rounded-lg uppercase shadow-md">Chọn hình ảnh</span></div>
@@ -864,17 +875,24 @@ const EditModal: React.FC<EditModalProps> = ({ sheet, row, headers, rowData, onC
   );
 };
 
-const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?: 'all' | 'processed' | 'pending' } | null }> = ({ jumpTo }) => {
+const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?: 'all' | 'processed' | 'pending' | 'nvvh' } | null }> = ({ jumpTo }) => {
   const MAX_COLS = 14; 
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState<any[]>([]);
   const [activeSheetName, setActiveSheetName] = useState(jumpTo?.sheet || 'Quản lý hành chính');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState<'all' | 'processed' | 'pending'>(jumpTo?.status || 'all');
+  const [selectedStatus, setSelectedStatus] = useState<'all' | 'processed' | 'pending' | 'nvvh'>(jumpTo?.status || 'all');
   const [editTarget, setEditTarget] = useState<{ row: number, data: any[], sheet: string } | null>(null);
   const lastScrolledRef = useRef<string | null>(null);
   const fetchIdRef = useRef(0);
+
+  useEffect(() => {
+    if (jumpTo) {
+      setActiveSheetName(jumpTo.sheet);
+      if (jumpTo.status) setSelectedStatus(jumpTo.status);
+    }
+  }, [jumpTo]);
 
   const categories = [
     { name: 'Tất cả', value: 'all' },
@@ -1010,8 +1028,10 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
       item.values.some((cell: any) => String(cell).toLowerCase().includes(safeSearchTerm));
     
     const isProcessed = !!(item.values[11] && String(item.values[11]).trim() !== '');
+    const isNVVH = !!(item.values[12] && String(item.values[12]).trim() !== '');
     const matchesStatus = selectedStatus === 'all' || 
       (selectedStatus === 'processed' && isProcessed) || 
+      (selectedStatus === 'nvvh' && isNVVH) ||
       (selectedStatus === 'pending' && !isProcessed);
       
     const dateStr = String(item.values[1] || '');
@@ -1043,7 +1063,14 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
         width: h.toLowerCase().includes('hình') || h.toLowerCase().includes('ảnh') ? 25 : 20
       }));
 
-      // Add data rows
+      // Add data rows and collect image tasks
+      const imageTasks: { 
+        url: string, 
+        fetchUrl: string, 
+        rowNumber: number, 
+        colIndex: number 
+      }[] = [];
+
       for (const item of filteredRows) {
         const rowData = item.values.slice(0, MAX_COLS);
         const row = worksheet.addRow(rowData);
@@ -1063,78 +1090,115 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
             if (imageUrls.length > 0) {
               const url = imageUrls[0];
               let fetchUrl = url;
+              
+              // Enhanced Drive detection
               if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
                 const driveMatch = url.match(/\/d\/(.+?)\/(view|edit|usp|copy)/) || 
-                                  url.match(/id=(.+?)(&|$)/) ||
+                                  url.match(/[?&]id=(.+?)(&|$)/) ||
                                   url.match(/\/file\/d\/(.+?)\//);
                 if (driveMatch && driveMatch[1]) {
                   fetchUrl = `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w800`;
                 }
               }
-
-              try {
-                // Small delay to avoid overwhelming the proxy or source
-                await new Promise(resolve => setTimeout(resolve, 50));
-
-                const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(fetchUrl)}`;
-                const response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                
-                const blob = await response.blob();
-                if (blob.size < 100) throw new Error("Invalid image size");
-
-                const arrayBuffer = await blob.arrayBuffer();
-                
-                // Determine valid extension for ExcelJS
-                let extension: 'png' | 'jpeg' | 'gif' = 'png';
-                const mimeType = blob.type.toLowerCase();
-                if (mimeType.includes('png')) extension = 'png';
-                else if (mimeType.includes('gif')) extension = 'gif';
-                else if (mimeType.includes('jpg') || mimeType.includes('jpeg')) extension = 'jpeg';
-                else extension = 'jpeg'; // Default fallback
-
-                // Get image dimensions to maintain aspect ratio
-                const imgObj = new Image();
-                const objectUrl = URL.createObjectURL(blob);
-                imgObj.src = objectUrl;
-                await new Promise((resolve) => {
-                  imgObj.onload = resolve;
-                  imgObj.onerror = resolve; // Continue even if dimensions fail
-                });
-                
-                const naturalWidth = imgObj.width || 100;
-                const naturalHeight = imgObj.height || 100;
-                URL.revokeObjectURL(objectUrl);
-
-                // Target max dimensions in pixels (approx for 25 width / 80 height)
-                // Excel points to pixels is roughly 1.33
-                const maxWidth = 180; 
-                const maxHeight = 100;
-                
-                const ratio = Math.min(maxWidth / naturalWidth, maxHeight / naturalHeight, 1);
-                const finalWidth = naturalWidth * ratio;
-                const finalHeight = naturalHeight * ratio;
-
-                const imageId = workbook.addImage({
-                  buffer: arrayBuffer,
-                  extension: extension,
-                });
-
-                worksheet.addImage(imageId, {
-                  tl: { col: i + 0.05, row: row.number - 0.95 } as any,
-                  ext: { width: finalWidth, height: finalHeight },
-                  editAs: 'oneCell'
-                });
-                
-                // Clear the text in image cell to avoid clutter
-                row.getCell(i + 1).value = '';
-              } catch (e) {
-                console.error("Failed to fetch image for excel:", fetchUrl, e);
-                row.getCell(i + 1).value = 'Lỗi ảnh: ' + url;
-              }
+              
+              imageTasks.push({ url, fetchUrl, rowNumber: row.number, colIndex: i });
             }
           }
         }
+      }
+
+      // Process images in parallel chunks to avoid overwhelming the server
+      const CHUNK_SIZE = 5;
+      for (let i = 0; i < imageTasks.length; i += CHUNK_SIZE) {
+        const chunk = imageTasks.slice(i, i + CHUNK_SIZE);
+        await Promise.all(chunk.map(async (task) => {
+          let objectUrl = null;
+          try {
+            let response;
+            let blob;
+            
+            // Helper for fetch with timeout
+            const fetchWithTimeout = async (url: string, timeout = 10000) => {
+              const controller = new AbortController();
+              const id = setTimeout(() => controller.abort(), timeout);
+              try {
+                const res = await fetch(url, { signal: controller.signal });
+                clearTimeout(id);
+                return res;
+              } catch (err) {
+                clearTimeout(id);
+                throw err;
+              }
+            };
+
+            // Try local proxy first
+            try {
+              const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(task.fetchUrl)}`;
+              response = await fetchWithTimeout(proxyUrl);
+              if (!response.ok) throw new Error(`Local proxy failed with ${response.status}`);
+              blob = await response.blob();
+            } catch (localProxyErr) {
+              console.warn("Local proxy failed, trying public fallback...", localProxyErr);
+              // Fallback to a public Google proxy
+              const fallbackUrl = `https://images1-focus-opensocial.googleusercontent.com/gadgets/proxy?container=focus&refresh=2592000&url=${encodeURIComponent(task.fetchUrl)}`;
+              response = await fetchWithTimeout(fallbackUrl);
+              if (!response.ok) throw new Error(`Public fallback failed with ${response.status}`);
+              blob = await response.blob();
+            }
+            
+            if (blob.size < 100) throw new Error("Invalid image size");
+
+            const arrayBuffer = await blob.arrayBuffer();
+            
+            // Determine valid extension for ExcelJS
+            let extension: 'png' | 'jpeg' | 'gif' = 'png';
+            const mimeType = blob.type.toLowerCase();
+            if (mimeType.includes('png')) extension = 'png';
+            else if (mimeType.includes('gif')) extension = 'gif';
+            else if (mimeType.includes('jpg') || mimeType.includes('jpeg')) extension = 'jpeg';
+            else extension = 'jpeg';
+
+            // Get image dimensions with timeout
+            const imgObj = new Image();
+            objectUrl = URL.createObjectURL(blob);
+            imgObj.src = objectUrl;
+            
+            await Promise.race([
+              new Promise((resolve) => {
+                imgObj.onload = resolve;
+                imgObj.onerror = resolve;
+              }),
+              new Promise((_, reject) => setTimeout(() => reject(new Error("Image load timeout")), 5000))
+            ]);
+            
+            const naturalWidth = imgObj.width || 100;
+            const naturalHeight = imgObj.height || 100;
+
+            const maxWidth = 180; 
+            const maxHeight = 100;
+            const ratio = Math.min(maxWidth / naturalWidth, maxHeight / naturalHeight, 1);
+            const finalWidth = naturalWidth * ratio;
+            const finalHeight = naturalHeight * ratio;
+
+            const imageId = workbook.addImage({
+              buffer: arrayBuffer,
+              extension: extension,
+            });
+
+            worksheet.addImage(imageId, {
+              tl: { col: task.colIndex + 0.05, row: task.rowNumber - 0.95 } as any,
+              ext: { width: finalWidth, height: finalHeight },
+              editAs: 'oneCell'
+            });
+            
+            worksheet.getRow(task.rowNumber).getCell(task.colIndex + 1).value = '';
+          } catch (e) {
+            console.error("Failed to fetch image for excel:", task.fetchUrl, e);
+            worksheet.getRow(task.rowNumber).getCell(task.colIndex + 1).value = 'Lỗi ảnh: ' + task.url;
+          } finally {
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+          }
+        }));
       }
 
       const buffer = await workbook.xlsx.writeBuffer();
@@ -1423,7 +1487,7 @@ const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'report' | 'processing' | 'summary'>('dashboard');
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
-  const [summaryJump, setSummaryJump] = useState<{ sheet: string, row?: number, status?: 'all' | 'processed' | 'pending' } | null>(null);
+  const [summaryJump, setSummaryJump] = useState<{ sheet: string, row?: number, status?: 'all' | 'processed' | 'pending' | 'nvvh' } | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })), 10000);
@@ -1440,8 +1504,8 @@ const App: React.FC = () => {
     setActiveTab('summary');
   };
 
-  const handleStatClick = (status: 'all' | 'processed' | 'pending') => {
-    setSummaryJump({ sheet: 'all', status });
+  const handleStatClick = (sheet: string, status: 'all' | 'processed' | 'pending' | 'nvvh') => {
+    setSummaryJump({ sheet, status });
     setActiveTab('summary');
   };
 
