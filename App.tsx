@@ -291,7 +291,7 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 mb-6">
+     <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 mb-6">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-2xl text-blue-600"><ActivityIcon size={18} /></div>
@@ -323,6 +323,32 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
                   <div key={idx} className="flex flex-col items-center group">
                     <div className="h-60 w-full relative bg-slate-900/5 dark:bg-slate-900/20 rounded-[2.5rem] overflow-hidden shadow-inner border border-slate-200/50 dark:border-slate-700/30 transition-all hover:shadow-2xl hover:scale-[1.02] duration-500">
                       <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-white/5 pointer-events-none" />
+                      
+                      {/* Corner Buttons */}
+                      <button 
+                        onClick={() => onStatClick(entry.name, 'processed')}
+                        className="absolute top-4 left-4 z-20 flex flex-col items-center p-3.5 bg-emerald-50/90 dark:bg-emerald-900/50 backdrop-blur-md rounded-[1.5rem] border border-emerald-100 dark:border-emerald-800/50 hover:scale-110 active:scale-95 transition-all shadow-xl min-w-[70px]"
+                      >
+                        <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Đã xử lý</span>
+                        <span className="text-lg font-black text-emerald-700 dark:text-emerald-300 leading-none">{completed}</span>
+                      </button>
+
+                      <button 
+                        onClick={() => onStatClick(entry.name, 'nvvh')}
+                        className="absolute top-4 right-4 z-20 flex flex-col items-center p-3.5 bg-amber-50/90 dark:bg-amber-900/50 backdrop-blur-md rounded-[1.5rem] border border-amber-100 dark:border-amber-800/50 hover:scale-110 active:scale-95 transition-all shadow-xl min-w-[70px]"
+                      >
+                        <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-1">NVVH đề xuất</span>
+                        <span className="text-lg font-black text-amber-700 dark:text-amber-300 leading-none">{processing}</span>
+                      </button>
+
+                      <button 
+                        onClick={() => onStatClick(entry.name, 'pending')}
+                        className="absolute bottom-4 left-4 z-20 flex flex-col items-center p-3.5 bg-rose-50/90 dark:bg-rose-900/50 backdrop-blur-md rounded-[1.5rem] border border-rose-100 dark:border-rose-800/50 hover:scale-110 active:scale-95 transition-all shadow-xl min-w-[70px]"
+                      >
+                        <span className="text-[9px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-1">Chưa xử lý</span>
+                        <span className="text-lg font-black text-rose-700 dark:text-rose-300 leading-none">{pending}</span>
+                      </button>
+
                       <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <PieChart>
                           <defs>
@@ -413,21 +439,7 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
                       </div>
                     </div>
                     <div className="mt-5 text-center w-full">
-                      <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-800 dark:text-slate-200 mb-3">{entry.name}</p>
-                      <div className="grid grid-cols-3 gap-1 px-2">
-                        <div className="flex flex-col items-center p-1.5 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/50">
-                          <span className="text-[8px] font-black text-emerald-600 uppercase tracking-tighter mb-0.5">Đã xử lý</span>
-                          <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-400">{completed}</span>
-                        </div>
-                        <div className="flex flex-col items-center p-1.5 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-800/50">
-                          <span className="text-[8px] font-black text-amber-600 uppercase tracking-tighter mb-0.5">NVVH đề xuất</span>
-                          <span className="text-[11px] font-black text-amber-700 dark:text-amber-400">{processing}</span>
-                        </div>
-                        <div className="flex flex-col items-center p-1.5 bg-rose-50 dark:bg-rose-900/20 rounded-xl border border-rose-100 dark:border-rose-800/50">
-                          <span className="text-[8px] font-black text-rose-600 uppercase tracking-tighter mb-0.5">Phát hiện</span>
-                          <span className="text-[11px] font-black text-rose-700 dark:text-rose-400">{pending}</span>
-                        </div>
-                      </div>
+                      <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-800 dark:text-slate-200 mb-1">{entry.name}</p>
                     </div>
                   </div>
                 );
@@ -435,7 +447,6 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
             )}
           </div>
         </div>
-
         
 
         <div className="bg-white dark:bg-slate-800 p-6 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 mb-6">
