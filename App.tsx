@@ -349,7 +349,7 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
                         onClick={() => onStatClick(entry.name, 'pending')}
                         className="absolute bottom-4 left-4 z-20 flex flex-col items-center p-3.5 bg-rose-50/90 dark:bg-rose-900/50 backdrop-blur-md rounded-[1.5rem] border border-rose-100 dark:border-rose-800/50 hover:scale-110 active:scale-95 transition-all shadow-xl min-w-[70px]"
                       >
-                        <span className="text-[9px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-1">CHưa xử lý</span>
+                        <span className="text-[9px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-1">Phát hiện</span>
                         <span className="text-lg font-black text-rose-700 dark:text-rose-300 leading-none">{pending}</span>
                       </button>
 
