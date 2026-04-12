@@ -80,6 +80,7 @@ const SHEET_ID = '1EVA37o8kSgi3Z86hwUQN5uyBtVwERDo3REO0xMtMqE0';
 // AppScript URL
 const REPORT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbytJsnBmwEMosm1dLK8VZTLYTt2CvR0E-ApUHFMDgWV6B0T1GEBnkk400Q4v0XBrRVO/exec';
 const PROCESS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz6EOtoLlEu4qUDZPllqs2eET8VOQ14WwJbM0drY-sVWKWVL1nKJcAFqo7nsnGdZ6jl/exec';
+const EDIT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwpCbRAAzIKjQhBq96OqYoAHgDaaahzvFkKo2NczHntmkwZOeGnSSFecvg44ZXZUhs/exec';
 
 const CATEGORIES = [
   'Quản lý hành chính',
@@ -241,7 +242,7 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
         return b.row - a.row; // If same time, higher row index is newer
       });
       
-      setRecentActivities(sortedActivities.slice(0, 6));
+      setRecentActivities(sortedActivities.slice(0, 5));
 
     } catch (err) {
       console.error("Dashboard error:", err);
@@ -348,7 +349,7 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
                         onClick={() => onStatClick(entry.name, 'pending')}
                         className="absolute bottom-4 left-4 z-20 flex flex-col items-center p-3.5 bg-rose-50/90 dark:bg-rose-900/50 backdrop-blur-md rounded-[1.5rem] border border-rose-100 dark:border-rose-800/50 hover:scale-110 active:scale-95 transition-all shadow-xl min-w-[70px]"
                       >
-                        <span className="text-[9px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-1">Chưa xử lý</span>
+                        <span className="text-[9px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-1">Phát hiện</span>
                         <span className="text-lg font-black text-rose-700 dark:text-rose-300 leading-none">{pending}</span>
                       </button>
 
@@ -801,31 +802,50 @@ const EditModal: React.FC<EditModalProps> = ({ sheet, row, headers, rowData, onC
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      // Làm sạch dữ liệu trước khi gửi
+      const cleanData = editedData.map(v => (v === null || v === undefined) ? '' : v);
+      
       const payload = {
         action: 'updateRowData',
         sheetName: sheet,
         row: row,
-        rowData: editedData,
+        rowData: cleanData,
         sheetId: SHEET_ID
       };
 
-      // Để tránh lỗi CORS "Failed to fetch" với Google Apps Script:
-      // Chúng ta gửi payload dưới dạng chuỗi và không đặt header Content-Type JSON.
-      // Apps Script sẽ nhận payload này qua e.postData.contents.
-      const response = await fetch(PROCESS_WEB_APP_URL, {
+      console.log("Sending update via proxy:", payload);
+
+      // Gửi qua server proxy để tránh lỗi CORS và nhận được phản hồi thực tế
+      const response = await fetch('/api/proxy-apps-script', {
         method: 'POST',
-        mode: 'no-cors', // Sử dụng no-cors để đảm bảo request được gửi đi mà không bị chặn bởi Preflight
-        body: JSON.stringify(payload)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: EDIT_WEB_APP_URL,
+          payload: payload
+        })
       });
 
-      // Lưu ý: với mode 'no-cors', response.ok sẽ luôn là false và chúng ta không đọc được body.
-      // Ta giả định thành công sau một khoảng thời gian ngắn hoặc sau khi request hoàn tất.
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("EditModal Proxy error:", errorData);
+        throw new Error(errorData.details || "Lỗi server proxy (Edit)");
+      }
+
+      const resultText = await response.text();
+      console.log("Update result raw:", resultText);
       
-      alert("Yêu cầu cập nhật đã được gửi! Vui lòng đợi vài giây để hệ thống xử lý.");
+      let result;
+      try {
+        result = JSON.parse(resultText);
+      } catch (e) {
+        result = resultText;
+      }
+
+      alert("Dữ liệu đã được cập nhật thành công! Hệ thống đang làm mới (vui lòng đợi 3 giây)...");
       onSave();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Save error:", err);
-      alert("Có lỗi xảy ra khi lưu. Vui lòng kiểm tra lại cấu hình Apps Script.");
+      alert("Có lỗi xảy ra khi lưu: " + err.message);
     } finally {
       setIsSaving(false);
     }
@@ -918,7 +938,7 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
     try {
       if (activeSheetName === 'all') {
         const promises = CATEGORIES.map(async (cat) => {
-          const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(cat)}`;
+          const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(cat)}&t=${Date.now()}`;
           const response = await fetch(url);
           const text = await response.text();
           const match = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
@@ -947,7 +967,7 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
           setData([headersWithSheet, ...allRows]);
         }
       } else {
-        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(activeSheetName)}`;
+        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(activeSheetName)}&t=${Date.now()}`;
         const response = await fetch(url);
         const text = await response.text();
         const match = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
@@ -1359,12 +1379,12 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
         <EditModal 
           sheet={editTarget.sheet} 
           row={editTarget.row} 
-          headers={data[0]} 
-          rowData={editTarget.data} 
+          headers={data[0].slice(0, MAX_COLS)} 
+          rowData={editTarget.data.slice(0, MAX_COLS)} 
           onClose={() => setEditTarget(null)}
           onSave={() => {
             setEditTarget(null);
-            setTimeout(fetchSheetData, 1000); // Đợi chút để Server cập nhật xong
+            setTimeout(fetchSheetData, 3500); // Tăng lên 3.5 giây để chắc chắn server đã cập nhật
           }}
         />
       )}
@@ -1424,17 +1444,27 @@ const ProcessingForm: React.FC = () => {
       }));
       const payload = { action: 'uploadFiles', form: { sheetId: SHEET_ID, sheet: formData.sheet, row: parseInt(formData.row), tinhTrang: formData.tinhTrang, ghiChu: formData.ghiChu, NVVH: formData.NVVH, files: filesPayload } };
       
-      await fetch(PROCESS_WEB_APP_URL, { 
+      // Gửi qua server proxy
+      const response = await fetch('/api/proxy-apps-script', { 
         method: 'POST', 
-        mode: 'no-cors',
-        body: JSON.stringify(payload) 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: PROCESS_WEB_APP_URL,
+          payload: payload
+        }) 
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("ProcessingForm Proxy error:", errorData);
+        throw new Error(errorData.details || "Lỗi server proxy (Processing)");
+      }
 
       setShowSuccess1(true);
       setFormData({ sheet: '', row: '', tinhTrang: '', ghiChu: '', NVVH: '' });
       setImages([]);
       setDefectList([]);
-    } catch (err) { alert("Lỗi: " + err); } finally { setIsSubmitting(false); }
+    } catch (err: any) { alert("Lỗi: " + err.message); } finally { setIsSubmitting(false); }
   };
 if (showSuccess1) {
   return (
