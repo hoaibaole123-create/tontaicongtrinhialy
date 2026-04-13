@@ -120,7 +120,7 @@ const CustomRadio: React.FC<{ label: string, description?: string, name: string,
 
 const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string, row: number) => void, onStatClick: (sheet: string, status: 'all' | 'processed' | 'pending' | 'nvvh') => void }> = ({ isDarkMode, onActivityClick, onStatClick }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [stats, setStats] = useState({ total: 0, pending: 0, completed: 0 });
+  const [stats, setStats] = useState({ total: 0, pending: 0, completed: 0, notStarted: 0 });
   const [chartData, setChartData] = useState<any[]>([]);
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [topContributors, setTopContributors] = useState<{name: string, total: number, monthly: {[key: string]: number}}[]>([]);
@@ -132,7 +132,8 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
       let combinedActivities: any[] = [];
       let totalCount = 0;
       let completedCount = 0;
-      let pendingCount = 0;
+      let processingCount = 0;
+      let notStartedCount = 0;
       const contributorMap: {[key: string]: { total: number, monthly: {[key: string]: number} }} = {};
 
       const parseDateObj = (val: any) => {
@@ -159,8 +160,8 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
             const detected = rows.length;
             
             const processed = rows.filter((r: any) => r.c[11] && r.c[11].v).length;
-            const nvvh = rows.filter((r: any) => r.c[12] && r.c[12].v).length;
-            const pending = detected - processed;
+            const processing = rows.filter((r: any) => r.c[12] && r.c[12].v).length;
+            const pending = rows.filter((r: any) => !(r.c[12] && r.c[12].v) && !(r.c[11] && r.c[11].v)).length;
 
             rows.forEach((r: any, idx: number) => {
               const physicalRow = idx + 2; // Physical row number in Google Sheets
@@ -197,24 +198,24 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
 
             totalCount += detected;
             completedCount += processed;
-            pendingCount += pending;
+            processingCount += processing;
+            notStartedCount += pending;
 
             return {
-              name: cat === 'Quản lý hành chính' ? 'Quản lý hành chính' : 
-                    cat === 'Thiết bị công trình' ? 'Thiết bị công trình' : 
-                    cat === 'An toàn vệ sinh lao động' ? 'An toàn vệ sinh lao động' : 'TPM, Kaizen',
+              name: cat,
               detected, 
               processed, 
-              nvvh      
+              processing,
+              pending      
             };
           }
         }
-        return { name: cat, detected: 0, processed: 0, nvvh: 0 };
+        return { name: cat, detected: 0, processed: 0, processing: 0, pending: 0 };
       });
 
       const results = await Promise.all(promises);
       setChartData(results);
-      setStats({ total: totalCount, completed: completedCount, pending: pendingCount });
+      setStats({ total: totalCount, completed: completedCount, pending: processingCount, notStarted: notStartedCount });
       
       // Process contributors
       const sortedContributors = Object.entries(contributorMap)
@@ -271,27 +272,34 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
       </div>
 
       <main className="px-4 -mt-12 relative z-10 flex-1 w-full">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           <div 
-            onClick={() => onStatClick('all')}
-            className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-xl border border-white/50 dark:border-slate-800 text-center group transition-all hover:bg-blue-50/10 cursor-pointer active:scale-95"
+            onClick={() => onStatClick('all', 'all')}
+            className="bg-white dark:bg-slate-800 p-4 rounded-3xl shadow-xl border border-white/50 dark:border-slate-800 text-center group transition-all hover:bg-blue-50/10 cursor-pointer active:scale-95"
           >
-            <p className="text-[10px] text-slate-400 font-black uppercase mb-1 tracking-widest">Tổng tồn tại</p>
-            <p className="text-3xl font-black text-blue-600 dark:text-blue-400">{isLoading ? <Loader2 className="animate-spin inline" size={20} /> : stats.total}</p>
+            <p className="text-[10px] text-slate-400 font-black uppercase mb-1 tracking-widest">Tổng</p>
+            <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{isLoading ? <Loader2 className="animate-spin inline" size={16} /> : stats.total}</p>
           </div>
           <div 
-            onClick={() => onStatClick('pending')}
-            className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-xl border border-white/50 dark:border-slate-800 text-center group transition-all hover:bg-amber-50/10 cursor-pointer active:scale-95"
-          >
-            <p className="text-[10px] text-slate-400 font-black uppercase mb-1 tracking-widest">Đang xử lý</p>
-            <p className="text-3xl font-black text-amber-500">{isLoading ? <Loader2 className="animate-spin inline" size={20} /> : stats.pending}</p>
-          </div>
-          <div 
-            onClick={() => onStatClick('processed')}
-            className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-xl border border-white/50 dark:border-slate-800 text-center group transition-all hover:bg-emerald-50/10 cursor-pointer active:scale-95"
+            onClick={() => onStatClick('all', 'processed')}
+            className="bg-white dark:bg-slate-800 p-4 rounded-3xl shadow-xl border border-white/50 dark:border-slate-800 text-center group transition-all hover:bg-emerald-50/10 cursor-pointer active:scale-95"
           >
             <p className="text-[10px] text-slate-400 font-black uppercase mb-1 tracking-widest">Hoàn thành</p>
-            <p className="text-3xl font-black text-emerald-500">{isLoading ? <Loader2 className="animate-spin inline" size={20} /> : stats.completed}</p>
+            <p className="text-2xl font-black text-emerald-500">{isLoading ? <Loader2 className="animate-spin inline" size={16} /> : stats.completed}</p>
+          </div>
+          <div 
+            onClick={() => onStatClick('all', 'nvvh')}
+            className="bg-white dark:bg-slate-800 p-4 rounded-3xl shadow-xl border border-white/50 dark:border-slate-800 text-center group transition-all hover:bg-amber-50/10 cursor-pointer active:scale-95"
+          >
+            <p className="text-[10px] text-slate-400 font-black uppercase mb-1 tracking-widest">Đang xử lý</p>
+            <p className="text-2xl font-black text-amber-500">{isLoading ? <Loader2 className="animate-spin inline" size={16} /> : stats.pending}</p>
+          </div>
+          <div 
+            onClick={() => onStatClick('all', 'pending')}
+            className="bg-white dark:bg-slate-800 p-4 rounded-3xl shadow-xl border border-white/50 dark:border-slate-800 text-center group transition-all hover:bg-rose-50/10 cursor-pointer active:scale-95"
+          >
+            <p className="text-[10px] text-slate-400 font-black uppercase mb-1 tracking-widest">Chưa xử lý</p>
+            <p className="text-2xl font-black text-rose-500">{isLoading ? <Loader2 className="animate-spin inline" size={16} /> : stats.notStarted}</p>
           </div>
         </div>
 
@@ -314,12 +322,13 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
             ) : (
               chartData.map((entry, idx) => {
                 const completed = entry.processed;
-                const processing = entry.nvvh;
-                const pending = Math.max(0, entry.detected - completed - processing);
+                const totalStarted = entry.processing;
+                const pending = entry.pending;
+                const inProgressOnly = Math.max(0, entry.detected - completed - pending);
                 
                 const data = [
-                  { name: 'Xử lý xong', value: completed, color: '#10b981', grad: `gradGreen-${idx}` },
-                  { name: 'Đang xử lý', value: processing, color: '#f59e0b', grad: `gradAmber-${idx}` },
+                  { name: 'Hoàn thành', value: completed, color: '#10b981', grad: `gradGreen-${idx}` },
+                  { name: 'Đang xử lý', value: inProgressOnly, color: '#f59e0b', grad: `gradAmber-${idx}` },
                   { name: 'Chưa xử lý', value: pending, color: '#ef4444', grad: `gradRed-${idx}` }
                 ].filter(d => d.value > 0);
 
@@ -333,7 +342,7 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
                         onClick={() => onStatClick(entry.name, 'processed')}
                         className="absolute top-4 left-4 z-20 flex flex-col items-center p-3.5 bg-emerald-50/90 dark:bg-emerald-900/50 backdrop-blur-md rounded-[1.5rem] border border-emerald-100 dark:border-emerald-800/50 hover:scale-110 active:scale-95 transition-all shadow-xl min-w-[70px]"
                       >
-                        <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Đã xử lý</span>
+                        <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Hoàn thành</span>
                         <span className="text-lg font-black text-emerald-700 dark:text-emerald-300 leading-none">{completed}</span>
                       </button>
 
@@ -341,8 +350,8 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
                         onClick={() => onStatClick(entry.name, 'nvvh')}
                         className="absolute top-4 right-4 z-20 flex flex-col items-center p-3.5 bg-amber-50/90 dark:bg-amber-900/50 backdrop-blur-md rounded-[1.5rem] border border-amber-100 dark:border-amber-800/50 hover:scale-110 active:scale-95 transition-all shadow-xl min-w-[70px]"
                       >
-                        <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-1">NVVH đề xuất</span>
-                        <span className="text-lg font-black text-amber-700 dark:text-amber-300 leading-none">{processing}</span>
+                        <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-1">Đang xử lý</span>
+                        <span className="text-lg font-black text-amber-700 dark:text-amber-300 leading-none">{totalStarted}</span>
                       </button>
 
                       <button 
@@ -511,7 +520,7 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
                 <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl text-emerald-600 shadow-inner"><Users size={20} /></div>
                 <div className="text-left">
                   <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Thống kê hoạt động</h2>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Bảng xếp hạng phát hiện tồn tại</p>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Bảng xếp hạng đóng góp nhân sự</p>
                 </div>
               </div>
               <div className="p-2 rounded-full bg-slate-50 dark:bg-slate-900 group-hover:bg-slate-100 dark:group-hover:bg-slate-700 transition-colors">
@@ -904,13 +913,15 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'processed' | 'pending' | 'nvvh'>(jumpTo?.status || 'all');
   const [editTarget, setEditTarget] = useState<{ row: number, data: any[], sheet: string } | null>(null);
+  const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
   const lastScrolledRef = useRef<string | null>(null);
   const fetchIdRef = useRef(0);
 
   useEffect(() => {
     if (jumpTo) {
       setActiveSheetName(jumpTo.sheet);
-      if (jumpTo.status) setSelectedStatus(jumpTo.status);
+      setSelectedStatus(jumpTo.status || 'all');
+      setSearchTerm(''); 
     }
   }, [jumpTo]);
 
@@ -921,14 +932,6 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
     { name: 'An toàn vệ sinh lao động', value: 'An toàn vệ sinh lao động' }, 
     { name: 'TPM, Kaizen', value: 'TPM, Kaizen' }
   ];
-
-  useEffect(() => {
-    if (jumpTo) {
-      setActiveSheetName(jumpTo.sheet);
-      setSelectedStatus(jumpTo.status || 'all');
-      setSearchTerm(''); 
-    }
-  }, [jumpTo]);
 
   const fetchSheetData = useCallback(async () => {
     const currentFetchId = ++fetchIdRef.current;
@@ -1052,7 +1055,7 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
     const matchesStatus = selectedStatus === 'all' || 
       (selectedStatus === 'processed' && isProcessed) || 
       (selectedStatus === 'nvvh' && isNVVH) ||
-      (selectedStatus === 'pending' && !isProcessed);
+      (selectedStatus === 'pending' && !isNVVH && !isProcessed);
       
     const dateStr = String(item.values[1] || '');
     const matchesMonth = selectedMonth === 'all' || dateStr.includes(selectedMonth);
@@ -1281,7 +1284,7 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
             />
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex gap-2 md:col-span-2">
             <select 
               className="flex-1 p-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-[10px] font-bold uppercase outline-none border-none"
               value={selectedMonth}
@@ -1297,9 +1300,30 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
               onChange={(e) => setSelectedStatus(e.target.value as any)}
             >
               <option value="all">TẤT CẢ TRẠNG THÁI</option>
+              <option value="nvvh"> ĐANG XỬ LÝ</option>
               <option value="pending">CHƯA XỬ LÝ</option>
-              <option value="processed">ĐÃ XỬ LÝ</option>
+              <option value="processed">HOÀN THÀNH</option>
             </select>
+
+            <button 
+              onClick={() => {
+                if (selectedRowIndex !== null) {
+                  const item = filteredRows.find(r => r.index === selectedRowIndex);
+                  if (item) {
+                    setEditTarget({ 
+                      row: item.index, 
+                      data: item.values, 
+                      sheet: activeSheetName === 'all' ? item.values[item.values.length - 1] : activeSheetName 
+                    });
+                  }
+                }
+              }}
+              disabled={selectedRowIndex === null}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed shadow-lg shadow-blue-200 dark:shadow-none"
+            >
+              <Edit3 size={14} />
+              <span className="hidden sm:inline">Sửa dòng chọn</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1314,6 +1338,7 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
               <table className="border-separate border-spacing-0 table-fixed" style={{ width: 'max-content', minWidth: '100%' }}>
                 <thead className="bg-slate-50 dark:bg-slate-800 sticky top-0 z-20 shadow-sm">
                   <tr>
+                    <th style={{ width: '50px' }} className="px-4 py-4 text-center text-[9px] font-black text-slate-400 uppercase tracking-widest border-r border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">Chọn</th>
                     {headers.slice(0, MAX_COLS).map((h: string, idx: number) => {
                       const lowerH = h.toLowerCase();
                       const isSTT = lowerH === 'stt';
@@ -1336,7 +1361,6 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
                         </th>
                       );
                     })}
-                    <th style={{ width: '80px' }} className="px-4 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
@@ -1346,21 +1370,19 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
                       <tr
                         key={item.index}
                         id={`row-${item.index}`}
-                        className={`${isJumped ? 'bg-yellow-100 dark:bg-yellow-900/40 ring-2 ring-yellow-400 ring-inset' : ''} transition-all duration-500`}
+                        onClick={() => setSelectedRowIndex(item.index)}
+                        className={`${isJumped ? 'bg-yellow-100 dark:bg-yellow-900/40 ring-2 ring-yellow-400 ring-inset' : ''} ${selectedRowIndex === item.index ? 'bg-blue-50 dark:bg-blue-900/20' : ''} transition-all duration-500 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50`}
                       >
+                        <td className="px-4 py-4 text-center border-r border-slate-100 dark:border-slate-800/50">
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${selectedRowIndex === item.index ? 'border-blue-600 bg-blue-600' : 'border-slate-300'}`}>
+                            {selectedRowIndex === item.index && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                          </div>
+                        </td>
                         {item.values.slice(0, MAX_COLS).map((cell: any, cIdx: number) => (
                           <td key={cIdx} className="px-4 py-4 text-xs text-slate-700 dark:text-slate-300 border-r border-slate-100 dark:border-slate-800/50 last:border-r-0 align-top overflow-hidden">
                             <TableCellContent value={cell} header={headers[cIdx]} />
                           </td>
                         ))}
-                        <td className="px-4 py-4 align-top border-slate-100 dark:border-slate-800/50">
-                          <button 
-                            onClick={() => setEditTarget({ row: item.index, data: item.values, sheet: activeSheetName === 'all' ? item.values[item.values.length - 1] : activeSheetName })}
-                            className="p-2 text-blue-600 bg-blue-50 dark:bg-blue-900/30 rounded-xl hover:bg-blue-100 transition-colors shadow-sm"
-                          >
-                            <Edit3 size={16} />
-                          </button>
-                        </td>
                       </tr>
                     );
                   })}
