@@ -277,21 +277,21 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
             onClick={() => onStatClick('all', 'all')}
             className="bg-white dark:bg-slate-800 p-4 rounded-3xl shadow-xl border border-white/50 dark:border-slate-800 text-center group transition-all hover:bg-blue-50/10 cursor-pointer active:scale-95"
           >
-            <p className="text-[20px] text-slate-400 font-black uppercase mb-1 tracking-widest">Tổng</p>
+            <p className="text-[16px] text-slate-400 font-black uppercase mb-1 tracking-widest">Tổng</p>
             <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{isLoading ? <Loader2 className="animate-spin inline" size={16} /> : stats.total}</p>
           </div>
           <div 
             onClick={() => onStatClick('all', 'processed')}
             className="bg-white dark:bg-slate-800 p-4 rounded-3xl shadow-xl border border-white/50 dark:border-slate-800 text-center group transition-all hover:bg-emerald-50/10 cursor-pointer active:scale-95"
           >
-            <p className="text-[20px] text-slate-400 font-black uppercase mb-1 tracking-widest">Hoàn thành</p>
+            <p className="text-[16px] text-slate-400 font-black uppercase mb-1 tracking-widest">Hoàn thành</p>
             <p className="text-2xl font-black text-emerald-500">{isLoading ? <Loader2 className="animate-spin inline" size={16} /> : stats.completed}</p>
           </div>
           <div 
             onClick={() => onStatClick('all', 'nvvh')}
             className="bg-white dark:bg-slate-800 p-4 rounded-3xl shadow-xl border border-white/50 dark:border-slate-800 text-center group transition-all hover:bg-amber-50/10 cursor-pointer active:scale-95"
           >
-            <p className="text-[20px] text-slate-400 font-black uppercase mb-1 tracking-widest">Đang xử lý</p>
+            <p className="text-[16px] text-slate-400 font-black uppercase mb-1 tracking-widest">Đang xử lý</p>
             <p className="text-2xl font-black text-amber-500">{isLoading ? <Loader2 className="animate-spin inline" size={16} /> : stats.pending}</p>
           </div>
           <div 
@@ -483,17 +483,17 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
                     {act.isDone ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-[20px] font-black text-slate-800 dark:text-slate-200 truncate leading-tight mb-1 uppercase tracking-tighter">
+                    <h3 className="text-[16px] font-black text-slate-800 dark:text-slate-200 truncate leading-tight mb-1 uppercase tracking-tighter">
                       {act.title}
                     </h3>
-                    <p className="text-[20px] text-slate-500 dark:text-slate-400 truncate mb-1">
+                    <p className="text-[15px] text-slate-500 dark:text-slate-400 truncate mb-1">
                       📍 {act.location}
                     </p>
                     <div className="flex items-center gap-2">
-                      <span className="text-[20px] font-black text-blue-500 uppercase tracking-widest bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-md">
+                      <span className="text-[15px] font-black text-blue-500 uppercase tracking-widest bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-md">
                         {act.category.split(',')[0]}
                       </span>
-                      <span className="text-[20px] font-bold text-slate-400 flex items-center gap-1">
+                      <span className="text-[15px] font-bold text-slate-400 flex items-center gap-1">
                         <Clock size={10} /> {act.time.split(' ')[0]}
                       </span>
                     </div>
