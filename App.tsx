@@ -277,28 +277,28 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
             onClick={() => onStatClick('all', 'all')}
             className="bg-white dark:bg-slate-800 p-4 rounded-3xl shadow-xl border border-white/50 dark:border-slate-800 text-center group transition-all hover:bg-blue-50/10 cursor-pointer active:scale-95"
           >
-            <p className="text-[10px] text-slate-400 font-black uppercase mb-1 tracking-widest">Tổng</p>
+            <p className="text-[20px] text-slate-400 font-black uppercase mb-1 tracking-widest">Tổng</p>
             <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{isLoading ? <Loader2 className="animate-spin inline" size={16} /> : stats.total}</p>
           </div>
           <div 
             onClick={() => onStatClick('all', 'processed')}
             className="bg-white dark:bg-slate-800 p-4 rounded-3xl shadow-xl border border-white/50 dark:border-slate-800 text-center group transition-all hover:bg-emerald-50/10 cursor-pointer active:scale-95"
           >
-            <p className="text-[10px] text-slate-400 font-black uppercase mb-1 tracking-widest">Hoàn thành</p>
+            <p className="text-[20px] text-slate-400 font-black uppercase mb-1 tracking-widest">Hoàn thành</p>
             <p className="text-2xl font-black text-emerald-500">{isLoading ? <Loader2 className="animate-spin inline" size={16} /> : stats.completed}</p>
           </div>
           <div 
             onClick={() => onStatClick('all', 'nvvh')}
             className="bg-white dark:bg-slate-800 p-4 rounded-3xl shadow-xl border border-white/50 dark:border-slate-800 text-center group transition-all hover:bg-amber-50/10 cursor-pointer active:scale-95"
           >
-            <p className="text-[10px] text-slate-400 font-black uppercase mb-1 tracking-widest">Đang xử lý</p>
+            <p className="text-[20px] text-slate-400 font-black uppercase mb-1 tracking-widest">Đang xử lý</p>
             <p className="text-2xl font-black text-amber-500">{isLoading ? <Loader2 className="animate-spin inline" size={16} /> : stats.pending}</p>
           </div>
           <div 
             onClick={() => onStatClick('all', 'pending')}
             className="bg-white dark:bg-slate-800 p-4 rounded-3xl shadow-xl border border-white/50 dark:border-slate-800 text-center group transition-all hover:bg-rose-50/10 cursor-pointer active:scale-95"
           >
-            <p className="text-[10px] text-slate-400 font-black uppercase mb-1 tracking-widest">Chưa xử lý</p>
+            <p className="text-[20px] text-slate-400 font-black uppercase mb-1 tracking-widest">Chưa xử lý</p>
             <p className="text-2xl font-black text-rose-500">{isLoading ? <Loader2 className="animate-spin inline" size={16} /> : stats.notStarted}</p>
           </div>
         </div>
