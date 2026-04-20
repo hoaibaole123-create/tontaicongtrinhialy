@@ -483,17 +483,17 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
                     {act.isDone ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-[11px] font-black text-slate-800 dark:text-slate-200 truncate leading-tight mb-1 uppercase tracking-tighter">
+                    <h3 className="text-[20px] font-black text-slate-800 dark:text-slate-200 truncate leading-tight mb-1 uppercase tracking-tighter">
                       {act.title}
                     </h3>
-                    <p className="text-[9px] text-slate-500 dark:text-slate-400 truncate mb-1">
+                    <p className="text-[20px] text-slate-500 dark:text-slate-400 truncate mb-1">
                       📍 {act.location}
                     </p>
                     <div className="flex items-center gap-2">
-                      <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-md">
+                      <span className="text-[20px] font-black text-blue-500 uppercase tracking-widest bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-md">
                         {act.category.split(',')[0]}
                       </span>
-                      <span className="text-[8px] font-bold text-slate-400 flex items-center gap-1">
+                      <span className="text-[20px] font-bold text-slate-400 flex items-center gap-1">
                         <Clock size={10} /> {act.time.split(' ')[0]}
                       </span>
                     </div>
