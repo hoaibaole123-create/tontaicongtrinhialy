@@ -160,7 +160,7 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
             const detected = rows.length;
             
             const processed = rows.filter((r: any) => r.c[11] && r.c[11].v).length;
-            const processing = rows.filter((r: any) => r.c[12] && r.c[12].v).length;
+            const processing = rows.filter((r: any) => (r.c[12] && r.c[12].v) && !(r.c[11] && r.c[11].v)).length;
             const pending = rows.filter((r: any) => !(r.c[12] && r.c[12].v) && !(r.c[11] && r.c[11].v)).length;
 
             rows.forEach((r: any, idx: number) => {
@@ -1054,7 +1054,7 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
     const isNVVH = !!(item.values[12] && String(item.values[12]).trim() !== '');
     const matchesStatus = selectedStatus === 'all' || 
       (selectedStatus === 'processed' && isProcessed) || 
-      (selectedStatus === 'nvvh' && isNVVH) ||
+      (selectedStatus === 'nvvh' && isNVVH && !isProcessed) ||
       (selectedStatus === 'pending' && !isNVVH && !isProcessed);
       
     const dateStr = String(item.values[1] || '');
