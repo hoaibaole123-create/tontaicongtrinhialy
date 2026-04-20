@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { 
   PlusCircle, 
   Moon, 
@@ -125,6 +125,26 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [topContributors, setTopContributors] = useState<{name: string, total: number, monthly: {[key: string]: number}}[]>([]);
   const [isStatsExpanded, setIsStatsExpanded] = useState(false);
+  const [selectedRankingMonth, setSelectedRankingMonth] = useState('all');
+
+  const availableStatsMonths = useMemo(() => {
+    const months = new Set<string>();
+    topContributors.forEach(p => {
+      Object.keys(p.monthly).forEach(m => months.add(m));
+    });
+    return Array.from(months).sort((a, b) => {
+      const [m1, y1] = a.split('/').map(Number);
+      const [m2, y2] = b.split('/').map(Number);
+      return y2 !== y1 ? y2 - y1 : m2 - m1;
+    });
+  }, [topContributors]);
+
+  const sortedContributorsByMonth = useMemo(() => {
+    if (selectedRankingMonth === 'all') return topContributors;
+    return [...topContributors]
+      .filter(p => p.monthly[selectedRankingMonth] > 0)
+      .sort((a, b) => (b.monthly[selectedRankingMonth] || 0) - (a.monthly[selectedRankingMonth] || 0));
+  }, [topContributors, selectedRankingMonth]);
 
   const fetchDashboardData = useCallback(async () => {
     setIsLoading(true);
@@ -523,22 +543,37 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Bảng thông kê phát hiện tồn tại của từng chức danh</p>
                 </div>
               </div>
-              <div className="p-2 rounded-full bg-slate-50 dark:bg-slate-900 group-hover:bg-slate-100 dark:group-hover:bg-slate-700 transition-colors">
-                {isStatsExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              <div className="flex items-center gap-3">
+                {isStatsExpanded && (
+                  <select 
+                    value={selectedRankingMonth}
+                    onChange={(e) => setSelectedRankingMonth(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-1.5 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
+                  >
+                    <option value="all">TẤT CẢ THỜI GIAN</option>
+                    {availableStatsMonths.map(m => (
+                      <option key={m} value={m}>THÁNG {m}</option>
+                    ))}
+                  </select>
+                )}
+                <div className="p-2 rounded-full bg-slate-50 dark:bg-slate-900 group-hover:bg-slate-100 dark:group-hover:bg-slate-700 transition-colors">
+                  {isStatsExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </div>
               </div>
             </button>
             
             {isStatsExpanded && (
-              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-h-[400px] overflow-y-auto pr-2 pb-4 custom-scrollbar animate-in slide-in-from-top-4 duration-300">
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-h-[600px] overflow-y-auto pr-2 pb-4 custom-scrollbar animate-in slide-in-from-top-4 duration-300">
                 {isLoading ? (
                   Array(6).fill(0).map((_, i) => (
                     <div key={i} className="h-24 bg-slate-50 dark:bg-slate-900/50 rounded-3xl animate-pulse" />
                   ))
-                ) : topContributors.length > 0 ? (
-                  topContributors.map((person, idx) => (
+                ) : sortedContributorsByMonth.length > 0 ? (
+                  sortedContributorsByMonth.map((person, idx) => (
                     <div key={idx} className="relative group p-5 bg-slate-50 dark:bg-slate-900/40 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 transition-all hover:shadow-xl hover:bg-white dark:hover:bg-slate-800 hover:-translate-y-1">
                       {/* Badge for Top 3 */}
-                      {idx < 3 && (
+                      {idx < 3 && selectedRankingMonth === 'all' && (
                         <div className={`absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black shadow-lg z-10 ${
                           idx === 0 ? 'bg-amber-400 text-white' : 
                           idx === 1 ? 'bg-slate-300 text-slate-700' : 
@@ -550,8 +585,8 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
                       
                       <div className="flex items-center gap-4 mb-4">
                         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-black shadow-inner shrink-0 ${
-                          idx === 0 ? 'bg-gradient-to-br from-amber-100 to-amber-200 text-amber-600' :
-                          idx === 1 ? 'bg-gradient-to-br from-slate-100 to-slate-200 text-slate-600' :
+                          idx === 0 && selectedRankingMonth === 'all' ? 'bg-gradient-to-br from-amber-100 to-amber-200 text-amber-600' :
+                          idx === 1 && selectedRankingMonth === 'all' ? 'bg-gradient-to-br from-slate-100 to-slate-200 text-slate-600' :
                           'bg-gradient-to-br from-blue-100 to-blue-200 text-blue-600'
                         }`}>
                           {person.name.charAt(0)}
@@ -561,10 +596,10 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
                             {person.name}
                           </h3>
                           <div className="flex items-center gap-1.5 mt-1">
-                            <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">
-                              {person.total}
+                            <span className="text-[12px] font-black text-blue-600 dark:text-blue-400">
+                              {selectedRankingMonth === 'all' ? person.total : (person.monthly[selectedRankingMonth] || 0)}
                             </span>
-                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Đóng góp</span>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Phát hiện</span>
                           </div>
                         </div>
                       </div>
@@ -577,9 +612,20 @@ const Dashboard: React.FC<{ isDarkMode: boolean, onActivityClick: (sheet: string
                             return y2 !== y1 ? y2 - y1 : m2 - m1;
                           })
                           .map(([month, count]) => (
-                            <div key={month} className="flex flex-col items-center min-w-[45px] py-1.5 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm transition-all group-hover:border-blue-200 dark:group-hover:border-blue-900/50">
-                              <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">T{month}</span>
-                              <span className="text-[10px] font-black text-slate-700 dark:text-slate-200">{count}</span>
+                            <div 
+                              key={month} 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedRankingMonth(month);
+                              }}
+                              className={`flex flex-col items-center min-w-[50px] py-1.5 rounded-xl border shadow-sm transition-all cursor-pointer ${
+                                selectedRankingMonth === month 
+                                ? 'bg-blue-600 border-blue-600 text-white scale-105 z-10' 
+                                : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-200 group-hover:border-blue-200 dark:group-hover:border-blue-900/50'
+                              }`}
+                            >
+                              <span className={`text-[7px] font-black uppercase tracking-tighter mb-0.5 ${selectedRankingMonth === month ? 'text-blue-100' : 'text-slate-400'}`}>T{month}</span>
+                              <span className="text-[10px] font-black">{count}</span>
                             </div>
                           ))}
                       </div>
