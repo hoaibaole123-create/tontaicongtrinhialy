@@ -862,9 +862,10 @@ const EditModal: React.FC<EditModalProps> = ({ sheet, row, headers, rowData, onC
       
       const payload = {
         action: 'updateRowData',
+        sheet: sheet,
         sheetName: sheet,
         row: row,
-        rowData: cleanData,
+        rowData: cleanData.slice(0, 14),
         sheetId: SHEET_ID
       };
 
@@ -994,13 +995,15 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
           if (match) {
             const json = JSON.parse(match[1]);
             if (json.table && json.table.rows) {
-              const rows = json.table.rows.map((row: any) => {
+              const rows = json.table.rows.map((row: any, idx: number) => {
                 const cells = row.c.map((cell: any) => {
                   if (!cell) return '';
                   return cell.f != null ? cell.f : (cell.v != null ? String(cell.v) : '');
                 });
-                // Add sheet name to the row data for reference
-                return [...cells, cat];
+                // Pad to 14 columns and add sheet name + original index
+                const paddedCells = [...cells];
+                while(paddedCells.length < 14) paddedCells.push('');
+                return [...paddedCells.slice(0, 14), cat, idx + 2];
               });
               return { rows, headers: json.table.cols.map((col: any) => col.label || '') };
             }
@@ -1012,8 +1015,8 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
         if (currentFetchId === fetchIdRef.current) {
           const allRows = results.flatMap(r => r.rows);
           const baseHeaders = results.find(r => r.headers.length > 0)?.headers || [];
-          const headersWithSheet = [...baseHeaders, 'Bộ phận'];
-          setData([headersWithSheet, ...allRows]);
+          const headersWithInfo = [...baseHeaders.slice(0, 14), 'Bộ phận', 'HiddenRowIdx'];
+          setData([headersWithInfo, ...allRows]);
         }
       } else {
         const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(activeSheetName)}&t=${Date.now()}`;
@@ -1024,14 +1027,18 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
         if (match && currentFetchId === fetchIdRef.current) {
           const json = JSON.parse(match[1]);
           if (json.table && json.table.rows) {
-            const rows = json.table.rows.map((row: any) => 
-              row.c.map((cell: any) => {
+            const rows = json.table.rows.map((row: any, idx: number) => {
+              const cells = row.c.map((cell: any) => {
                 if (!cell) return '';
                 return cell.f != null ? cell.f : (cell.v != null ? String(cell.v) : '');
-              })
-            );
+              });
+              const paddedCells = [...cells];
+              while(paddedCells.length < 14) paddedCells.push('');
+              return [...paddedCells.slice(0, 14), activeSheetName, idx + 2];
+            });
             const headers = json.table.cols.map((col: any) => col.label || '');
-            setData([headers, ...rows]);
+            const headersWithInfo = [...headers.slice(0, 14), 'Bộ phận', 'HiddenRowIdx'];
+            setData([headersWithInfo, ...rows]);
           }
         }
       }
@@ -1052,7 +1059,7 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
       return;
     }
 
-    const targetId = `row-${jumpTo.row}`;
+    const targetId = `row-${jumpTo.sheet}-${jumpTo.row}`;
     let attempts = 0;
     const maxAttempts = 30;
     
@@ -1074,7 +1081,9 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
   const safeSearchTerm = String(searchTerm || '').trim().toLowerCase();
   const headers = data[0] || [];
   const rowsWithIndex = data.slice(1).map((row, idx) => {
-    const physicalRow = idx + 2;
+    // row is [col0...col13, sheetName, originalRowIdx]
+    const originalRowIdx = row[row.length - 1];
+    const physicalRow = typeof originalRowIdx === 'number' ? originalRowIdx : idx + 2;
     return { values: row, index: physicalRow };
   });
 
@@ -1359,7 +1368,7 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
                     setEditTarget({ 
                       row: item.index, 
                       data: item.values, 
-                      sheet: activeSheetName === 'all' ? item.values[item.values.length - 1] : activeSheetName 
+                      sheet: activeSheetName === 'all' ? item.values[14] : activeSheetName 
                     });
                   }
                 }
@@ -1411,11 +1420,14 @@ const DefectSummary: React.FC<{ jumpTo?: { sheet: string, row?: number, status?:
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
                   {filteredRows.map((item) => {
-                    const isJumped = jumpTo?.row === item.index && jumpTo?.sheet === activeSheetName;
+                    const sheetName = item.values[14];
+                    const uniqueKey = `${sheetName}-${item.index}`;
+                    const isJumped = jumpTo?.row === item.index && jumpTo?.sheet === sheetName;
+                    
                     return (
                       <tr
-                        key={item.index}
-                        id={`row-${item.index}`}
+                        key={uniqueKey}
+                        id={`row-${sheetName}-${item.index}`}
                         onClick={() => setSelectedRowIndex(item.index)}
                         className={`${isJumped ? 'bg-yellow-100 dark:bg-yellow-900/40 ring-2 ring-yellow-400 ring-inset' : ''} ${selectedRowIndex === item.index ? 'bg-blue-50 dark:bg-blue-900/20' : ''} transition-all duration-500 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50`}
                       >
